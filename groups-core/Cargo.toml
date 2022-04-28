@@ -1,0 +1,20 @@
+[package]
+name = "groups-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ephraim Kunz <ephraimkunz@me.com>"]
+description = "Core library for encoding / decoding student availability info and choosing groups"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+base64 = "0.13.0"
+time-tz = {version = "1.0.1", features = ["db"]}
+serde = { version = "1.0", features = ["derive"] }
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+time = "0.3.9"
+console_error_panic_hook = "0.1.7"
+
+[target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies]
+ js-sys = { version = "0.3" }

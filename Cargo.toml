@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "groups-server",
+    "groups-core"
+]

@@ -1,0 +1,72 @@
+td {
+    text-align: center;
+}
+
+th {
+    text-align: center;
+}
+
+.td_unselected {
+    background: var(--white);
+    color: var(--dark);
+}
+
+.td_selected {
+    background: var(--success);
+    color: var(--light);
+}
+
+code {
+    margin-right: 1rem;
+}
+
+.schedule-code-parent {
+    visibility: hidden;
+    margin: 5px 0;
+    padding: 1rem;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+.schedule-display-table {
+    table-layout: fixed;
+    width: 5000px;
+}
+
+.table-vertical-scroll {
+    overflow-y: auto;
+    max-height: 700px;
+}
+
+thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: red;
+}
+
+table thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+}
+
+table tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+
+    text-align: left;
+    font-weight: normal;
+
+    /* Copied from thead-light bootstrap class, since these are headers inside the body */
+    color: #495057;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+table {
+    border-collapse: separate;
+    /* Don't collapse */
+    border-spacing: 0;
+}
