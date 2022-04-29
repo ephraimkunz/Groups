@@ -2,107 +2,51 @@
 <html lang="en">
 
 <head>
-  <!-- Required meta tags -->
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-  <!-- Bootstrap CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css"
-    integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css"
+        integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
 
-  <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/style.css">
 
-  <title>Individual Schedule</title>
+    <title>Group Scheduling</title>
 </head>
 
 <body>
-  <div class="container">
-    <h1>Individual Schedule</h1>
-    <br>
-    <form>
-      <div class="form-group">
-        <label for="inputName">Your name</label>
-        <input type="text" class="form-control" id="inputName" placeholder="Enter name">
-      </div>
-      <br>
-      <div class="form-group">
-        <label for="inputTimezone">Your timezone</label>
-        <select class="form-control selectpicker" id="inputTimezone" data-live-search="true" title="Select a timezone">
-        </select>
-      </div>
-      <br>
-      <div class="form-group">
-        <label for="inputAvailability">When are you available to meet with your group? (select all that apply)</label>
-        <table style="width:100%" id="inputAvailability" class="table table-sm table-bordered">
-          <thead class="thead-light">
-            <tr>
-              <th>Monday</th>
-              <th>Tuesday</th>
-              <th>Wednesday</th>
-              <th>Thursday</th>
-              <th>Friday</th>
-              <th>Saturday</th>
-            </tr>
-          </thead>
-          <tr style="height:80px">
-            <td class='td_unselected' onclick='select_cell(this)'>Morning<br>(7 - 10 AM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Morning<br>(7 - 10 AM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Morning<br>(7 - 10 AM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Morning<br>(7 - 10 AM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Morning<br>(7 - 10 AM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Morning<br>(7 - 10 AM)</td>
-          </tr>
-          <tr style="height:80px">
-            <td class='td_unselected' onclick='select_cell(this)'>Midday<br>(11 AM - 2 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Midday<br>(11 AM - 2 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Midday<br>(11 AM - 2 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Midday<br>(11 AM - 2 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Midday<br>(11 AM - 2 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Midday<br>(11 AM - 2 PM)</td>
-          </tr>
-          <tr style="height:80px">
-            <td class='td_unselected' onclick='select_cell(this)'>Afternoon<br>(3 - 6 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Afternoon<br>(3 - 6 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Afternoon<br>(3 - 6 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Afternoon<br>(3 - 6 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Afternoon<br>(3 - 6 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Afternoon<br>(3 - 6 PM)</td>
-          </tr>
-          <tr style="height:80px">
-            <td class='td_unselected' onclick='select_cell(this)'>Evening<br>(7 - 10 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Evening<br>(7 - 10 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Evening<br>(7 - 10 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Evening<br>(7 - 10 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Evening<br>(7 - 10 PM)</td>
-            <td class='td_unselected' onclick='select_cell(this)'>Evening<br>(7 - 10 PM)</td>
-          </tr>
-        </table>
-      </div>
-      <br>
-      <button type="button" class="btn btn-primary" id="submit-button" disabled>Get Schedule Code</button>
-    </form>
+    <div class="container">
+        <h1>Group Scheduler</h1>
 
-    <br>
-    <div class="schedule-code-parent bg-light"><code id="schedule-code" class="text-success"></code><button
-        type="button" class="btn btn-secondary" id="copy-button">Copy</button></div>
-  </div>
+        <br>
 
-  <script type="module" src="static/js/module.js"></script>
+        
+        <button class="btn btn-primary mr-2" onclick="location.href = '/student';">
+            I am a student
+        </button>
 
-  <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
-    integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-    crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF"
-    crossorigin="anonymous"></script>
+        <button class="btn btn-primary mx-2"  onclick="location.href = '/instructor';">
+            I am an instructor
+        </button>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
+        <button class="btn btn-secondary mx-2"  onclick="location.href = 'https://github.com/ephraimkunz/Groups';"">
+            I want to view this site's source code
+        </button>
+    </div>
 
-  <script src="static/js/main.js"></script>
+    <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF"
+        crossorigin="anonymous"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
 </body>
 
 </html>

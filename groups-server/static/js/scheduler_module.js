@@ -1,4 +1,4 @@
-import init, { timezones_wasm, Student, tz_groups_init } from "../pkg/groups_core.js";
+import init, { timezones_wasm, Student, tz_groups_init, create_groups_wasm } from "../pkg/groups_core.js";
 init()
     .then(() => {
         tz_groups_init();
@@ -70,4 +70,14 @@ init()
         })
         $('#inputTimezone').selectpicker('refresh')
         $('#inputTimezone').selectpicker('val', 'America/Los_Angeles')
+
+        // Submit button handling
+        let submit_button = document.getElementById("submit-button")
+        let groups_output = document.getElementById("groups-output")
+        let group_size = document.getElementById("inputGroupSize")
+        submit_button.onclick = () => {
+            let schedules = schedule_ids.value.split(/[\s,]+/)
+            let groups = create_groups_wasm(schedules, group_size.value)
+            groups_output.innerHTML = JSON.stringify(groups, null, 2)
+        }
     });

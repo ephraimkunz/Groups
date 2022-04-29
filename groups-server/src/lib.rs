@@ -8,26 +8,30 @@ use rocket::{Build, Rocket};
 
 #[get("/")]
 async fn index() -> Option<NamedFile> {
-    let mut path = PathBuf::from(relative!("static"));
-    path.push("html");
-    path.push("index.html");
-
-    NamedFile::open(path).await.ok()
+    html_file_named("index").await
 }
 
-#[get("/scheduler")]
-async fn scheduler() -> Option<NamedFile> {
+#[get("/student")]
+async fn student() -> Option<NamedFile> {
+    html_file_named("student").await
+}
+
+#[get("/instructor")]
+async fn instructor() -> Option<NamedFile> {
+    html_file_named("instructor").await
+}
+
+async fn html_file_named(filename: &str) -> Option<NamedFile> {
     let mut path = PathBuf::from(relative!("static"));
     path.push("html");
-    path.push("scheduler.html");
-
+    path.push(format!("{filename}.html"));
     NamedFile::open(path).await.ok()
 }
 
 #[shuttle_service::main]
 async fn init() -> Result<Rocket<Build>, shuttle_service::Error> {
     let rocket = rocket::build()
-        .mount("/", routes![index, scheduler])
+        .mount("/", routes![index, student, instructor])
         .mount("/static", FileServer::from(relative!("static")));
 
     Ok(rocket)
