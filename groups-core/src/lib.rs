@@ -1,9 +1,11 @@
+use scheduling::NUM_HOURS_PER_WEEK;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use time_tz::{timezones, Offset, TimeZone, Tz};
 use wasm_bindgen::prelude::*;
 
-const NUM_HOURS_PER_WEEK: usize = 24 * 7;
+pub mod scheduling;
+
 const NUM_USED_BITS_IN_AVAILABILITY1: usize = NUM_HOURS_PER_WEEK - 128;
 
 // Use https://rustwasm.github.io/docs/wasm-bindgen/reference/arbitrary-data-with-serde.html
@@ -31,33 +33,8 @@ pub fn timezones() -> Vec<String> {
     names
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Group {
-    students: Vec<String>,
-    suggested_meet_block: String,
-}
-
 #[wasm_bindgen]
-pub fn create_groups_wasm(students: &JsValue, group_size: usize) -> JsValue {
-    let student_strings: Vec<String> = students.into_serde().unwrap();
-    let groups = create_groups(&student_strings, group_size);
-    JsValue::from_serde(&groups).unwrap()
-}
-
-pub fn create_groups(students: &[String], group_size: usize) -> Vec<Group> {
-    if students.is_empty() || group_size == 0 {
-        return vec![];
-    }
-
-    // Put them all in one group for now.
-    vec![Group {
-        students: students.iter().map(|s| s.to_string()).collect(),
-        suggested_meet_block: String::from("5:00 pm tuesday"),
-    }]
-}
-
-#[wasm_bindgen]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Student {
     /// Student name
     name: String,
@@ -355,30 +332,5 @@ mod tests {
             .collect();
 
         assert_eq!(avail_result, expected)
-    }
-
-    #[test]
-    fn groups_no_students() {
-        assert_eq!(0, create_groups(&[], 3).len())
-    }
-
-    #[test]
-    fn groups_no_size() {
-        let students = [String::from(
-            "VGVzdHxBZnJpY2EvR2Fib3JvbmV8NTE1Mzk2MDc1NTIwfDA=",
-        )];
-        assert_eq!(0, create_groups(&students, 0).len())
-    }
-
-    #[test]
-    fn groups_single_student() {
-        assert_eq!(
-            1,
-            create_groups(
-                &[String::from("VGVzdHxBZnJpY2EvS2lnYWxpfDMyMjEyMjU0NzIwfDA=")],
-                3
-            )
-            .len()
-        )
     }
 }

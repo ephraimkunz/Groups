@@ -3,6 +3,8 @@ init()
     .then(() => {
         tz_groups_init();
 
+        const SPLIT_REGEX = /[\s,"]+/
+
         // Setup table header.
         let hour_header = document.getElementById("hour-header")
         hour_header.insertCell(0).outerHTML = "<th></th>";
@@ -19,7 +21,7 @@ init()
         timezone.onchange = updateTableData
 
         function updateTableData() {
-            let schedules = schedule_ids.value.split(/[\s,]+/)
+            let schedules = schedule_ids.value.split(SPLIT_REGEX)
             let table = document.getElementById("schedule-table")
             let table_body = document.getElementById('table-body')
 
@@ -76,7 +78,7 @@ init()
         let groups_output = document.getElementById("groups-output")
         let group_size = document.getElementById("inputGroupSize")
         submit_button.onclick = () => {
-            let schedules = schedule_ids.value.split(/[\s,]+/)
+            let schedules = schedule_ids.value.split(SPLIT_REGEX)
             let groups = create_groups_wasm(schedules, group_size.value)
             groups_output.innerHTML = JSON.stringify(groups, null, 2)
         }

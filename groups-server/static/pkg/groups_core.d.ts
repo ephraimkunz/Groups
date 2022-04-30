@@ -56,7 +56,6 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly tz_groups_init: () => void;
   readonly timezones_wasm: () => number;
-  readonly create_groups_wasm: (a: number, b: number) => number;
   readonly __wbg_student_free: (a: number) => void;
   readonly student_new: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly student_from_encoded: (a: number, b: number) => number;
@@ -64,10 +63,12 @@ export interface InitOutput {
   readonly student_availability_in_timezone: (a: number, b: number, c: number, d: number) => void;
   readonly student_name: (a: number, b: number) => void;
   readonly student_timezone: (a: number, b: number) => void;
+  readonly create_groups_wasm: (a: number, b: number) => number;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
+  readonly __wbindgen_exn_store: (a: number) => void;
 }
 
 /**
