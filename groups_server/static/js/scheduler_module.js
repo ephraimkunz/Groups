@@ -75,7 +75,7 @@ init()
 
         // Submit button handling
         let submit_button = document.getElementById("submit-button")
-        let groups_output = document.getElementById("groups-output")
+        let groups_output = document.getElementById("groups_output")
         let group_size = document.getElementById("inputGroupSize")
         submit_button.onclick = () => {
             let schedules = schedule_ids.value.split(SPLIT_REGEX)

@@ -1,15 +1,16 @@
 # Build wasm.
-cd groups-core
+cd groups_core
 ./build.sh
 
 # Copy it to the static file server directory.
 cd ../
-cp -r groups-core/pkg groups-server/static/
+rm -r groups_server/static/pkg
+cp -r groups_core/pkg groups_server/static/
 
 # Remove the .gitignore file, which if present prevents the deploy script from packaging that directory for Shuttle.
-rm groups-server/static/pkg/.gitignore
+rm groups_server/static/pkg/.gitignore
 
 # Deploy server to Shuttle.
-cd groups-server
+cd groups_server
 ./deploy.sh
 cd ../

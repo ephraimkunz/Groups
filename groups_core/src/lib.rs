@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use time_tz::{timezones, Offset, TimeZone, Tz};
 use wasm_bindgen::prelude::*;
+use bitvec::prelude::*;
 
 pub mod scheduling;
 
@@ -48,6 +49,47 @@ pub struct Student {
     /// We store it like this so the encoded version is very compact when base64 encoded.
     availability0: u128,
     availability1: u64,
+}
+
+struct AvailabilityIter {
+    offset: i8,
+    availability0: u128,
+    availability1: u64,
+    current: usize,
+}
+
+impl Iterator for AvailabilityIter {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current == NUM_HOURS_PER_WEEK {
+            None
+        } else {
+            // Rotating by wrapping the index here is how we shift timezones, since it causes everything to wrap
+            // around the week properly.
+
+            let mut wrapped_index = self.current;
+            if self.offset > 0 {
+                wrapped_index += self.offset as usize;
+                wrapped_index %= NUM_HOURS_PER_WEEK;
+            } else if self.offset < 0 {
+                if self.offset.abs() as usize > wrapped_index {
+                    wrapped_index =
+                        NUM_HOURS_PER_WEEK - (self.offset.abs() as usize - wrapped_index);
+                } else {
+                    wrapped_index -= self.offset.abs() as usize
+                }
+            }
+
+            let value = if wrapped_index < 128 {
+                self.availability0 & (1 << wrapped_index)
+            } else {
+                self.availability1 as u128 & (1 << (wrapped_index - 128))
+            };
+            self.current += 1;
+            Some(value != 0)
+        }
+    }
 }
 
 #[wasm_bindgen]
@@ -111,29 +153,13 @@ impl Student {
         }
     }
 
-    /// Convert internal availability representation of packed bits to a string where 1 represents available, 0 represents unavailable.
-    fn availability_string(&self) -> String {
-        let mut availability_string = String::with_capacity(NUM_HOURS_PER_WEEK);
-
-        for i in 0..128 {
-            let c = if self.availability0 & (1 << i) == 0 {
-                '0'
-            } else {
-                '1'
-            };
-            availability_string.push(c);
+    fn availability_iter(&self, offset: i8) -> AvailabilityIter {
+        AvailabilityIter {
+            offset,
+            availability0: self.availability0,
+            availability1: self.availability1,
+            current: 0,
         }
-
-        for i in 0..(NUM_USED_BITS_IN_AVAILABILITY1) {
-            let c = if self.availability1 & (1 << i) == 0 {
-                '0'
-            } else {
-                '1'
-            };
-            availability_string.push(c);
-        }
-
-        availability_string
     }
 
     pub fn encode(&self) -> String {
@@ -162,12 +188,11 @@ impl Student {
         }
     }
 
-    pub fn availability_in_timezone(&self, timezone: &str) -> Option<String> {
-        let mut char_array: Vec<_> = self.availability_string().chars().collect();
+    fn availability_offset_for_output_timezone(&self, timezone: &Tz) -> i8 {
+        let old_tz = self.timezone;
+        let new_tz = timezone;
 
         let now = self.now();
-        let old_tz = self.timezone;
-        let new_tz = timezones::get_by_name(timezone)?;
 
         // We're going to assume here that all the timezones we care about have hour granularity offsets,
         // which isn't true for all timezones but simplifies things a lot.
@@ -175,14 +200,26 @@ impl Student {
         let old_offset = old_tz.get_offset_utc(&now);
         let new_offset = new_tz.get_offset_utc(&now);
         let difference = old_offset.to_utc().whole_hours() - new_offset.to_utc().whole_hours();
-        // Rotating here is how we shift timezones, since it causes everything to wrap around the week properly.
-        if difference > 0 {
-            char_array.rotate_left(difference as usize)
-        } else {
-            char_array.rotate_right(difference.abs() as usize)
-        }
+        difference
+    }
 
-        Some(char_array.iter().collect())
+    pub fn availability_in_timezone(&self, timezone: &str) -> Option<String> {
+        let new_tz = timezones::get_by_name(timezone)?;
+        let difference = self.availability_offset_for_output_timezone(new_tz);
+
+        let result: String = self
+            .availability_iter(difference)
+            .map(|a| if a { '1' } else { '0' })
+            .collect();
+        Some(result)
+    }
+
+    pub fn availability_array_in_utc(&self) -> Vec<u8> {
+        let utc = timezones::db::UTC;
+        let difference = self.availability_offset_for_output_timezone(utc);
+        self.availability_iter(difference)
+            .map(|a| if a { 1 } else { 0 })
+            .collect()
     }
 
     pub fn name(&self) -> String {
@@ -225,8 +262,6 @@ mod tests {
         .unwrap();
 
         let encoded = student.encode();
-
-        println!("{}", encoded);
         let decoded = Student::from_encoded(&encoded);
 
         assert_eq!(Some(student), decoded)

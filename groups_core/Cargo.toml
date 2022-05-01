@@ -1,12 +1,12 @@
 [package]
-name = "groups-core"
+name = "groups_core"
 version = "0.1.0"
 edition = "2021"
 authors = ["Ephraim Kunz <ephraimkunz@me.com>"]
 description = "Core library for encoding / decoding student availability info and choosing groups"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 base64 = "0.13.0"
@@ -18,8 +18,9 @@ console_error_panic_hook = "0.1.7"
 rand = "0.8.5"
 itertools = "0.10.3"
 rayon = "1.5.2"
+bitvec = "1.0.0"
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies]
- js-sys = { version = "0.3" }
- getrandom = { version = "0.2", features = ["js"] }
+js-sys = { version = "0.3" }
+getrandom = { version = "0.2", features = ["js"] }
 

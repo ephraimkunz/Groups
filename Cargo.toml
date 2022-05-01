@@ -1,6 +1,14 @@
 [workspace]
 
 members = [
-    "groups-server",
-    "groups-core"
+    "groups_server",
+    "groups_core",
 ]
+
+[profile.release]
+debug = true
+overflow-checks = true
+split-debuginfo = "packed"
+
+[profile.dev]
+split-debuginfo = "packed"

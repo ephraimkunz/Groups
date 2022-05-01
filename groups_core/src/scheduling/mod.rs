@@ -1,8 +1,8 @@
 use crate::timezones;
 
 use super::Student;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{prelude::SmallRng, seq::SliceRandom};
+use rand::{thread_rng, Rng, RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -17,7 +17,7 @@ pub const NUM_HOURS_PER_WEEK: usize = NUM_HOURS_PER_DAY * NUM_DAYS_PER_WEEK;
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Group {
     students: Vec<String>,
-    suggested_meet_time: usize,
+    suggested_meet_times: Vec<usize>,
 }
 
 #[wasm_bindgen]
@@ -35,40 +35,49 @@ pub fn create_groups(students_encoded: &[String], group_size: usize) -> Vec<Grou
     random_strategy(&students, group_size)
 }
 
-fn add_random_day_availability(buffer: &mut String) {
+fn add_random_day_availability<R: Rng>(buffer: &mut String, rng: &mut R) {
     buffer.push_str("0000000");
 
     const BLOCKS: [&str; 2] = ["1111", "0000"];
     for _ in 0..4 {
-        let block = BLOCKS.choose(&mut thread_rng()).unwrap();
+        let block = BLOCKS.choose(rng).unwrap();
         buffer.push_str(block);
     }
 
     buffer.push('0')
 }
 
-fn random_week_availability() -> String {
+fn random_week_availability<R: Rng>(rng: &mut R) -> String {
     let mut week_availability = String::with_capacity(NUM_HOURS_PER_WEEK);
     for _ in 0..NUM_DAYS_PER_WEEK {
-        add_random_day_availability(&mut week_availability);
+        add_random_day_availability(&mut week_availability, rng);
     }
 
     week_availability
 }
 
-fn random_students(count: usize) -> Vec<Student> {
+fn random_students(count: usize, seed: Option<u64>) -> (Vec<Student>, u64) {
     let timezones = timezones();
+    let seed = match seed {
+        Some(s) => s,
+        None => thread_rng().next_u64(),
+    };
 
-    (0..count)
-        .into_iter()
-        .map(|i| {
-            let name = format!("Student {i}");
-            let timezone = timezones.choose(&mut thread_rng()).unwrap();
-            let availability = random_week_availability();
+    let mut rng = SmallRng::seed_from_u64(seed);
 
-            Student::new(&name, timezone, &availability).unwrap()
-        })
-        .collect()
+    (
+        (0..count)
+            .into_iter()
+            .map(|i| {
+                let name = format!("Student {i}");
+                let timezone = timezones.choose(&mut rng).unwrap();
+                let availability = random_week_availability(&mut rng);
+
+                Student::new(&name, timezone, &availability).unwrap()
+            })
+            .collect(),
+        seed,
+    )
 }
 
 #[cfg(test)]
