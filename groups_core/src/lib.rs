@@ -1,13 +1,11 @@
+use bitvec::prelude::*;
 use scheduling::NUM_HOURS_PER_WEEK;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use time_tz::{timezones, Offset, TimeZone, Tz};
 use wasm_bindgen::prelude::*;
-use bitvec::prelude::*;
 
 pub mod scheduling;
-
-const NUM_USED_BITS_IN_AVAILABILITY1: usize = NUM_HOURS_PER_WEEK - 128;
 
 // Use https://rustwasm.github.io/docs/wasm-bindgen/reference/arbitrary-data-with-serde.html
 // since wasm_bindgen doesn't yet support returning an array of strings.
@@ -34,8 +32,10 @@ pub fn timezones() -> Vec<String> {
     names
 }
 
+type AvailabilityBits = BitArr!(for NUM_HOURS_PER_WEEK, in u32, Lsb0);
+
 #[wasm_bindgen]
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub struct Student {
     /// Student name
     name: String,
@@ -47,15 +47,18 @@ pub struct Student {
     /// Starts on Monday at 12:00 AM.
     /// We want to store NUM_HOURS_PER_WEEK bits, so use these two integer types.
     /// We store it like this so the encoded version is very compact when base64 encoded.
-    availability0: u128,
-    availability1: u64,
+    availability_bits: AvailabilityBits,
 }
 
 struct AvailabilityIter {
-    offset: i8,
-    availability0: u128,
-    availability1: u64,
+    availability_bits: AvailabilityBits,
     current: usize,
+}
+
+impl AvailabilityIter {
+    fn inner_availability(&self) -> AvailabilityBits {
+        self.availability_bits
+    }
 }
 
 impl Iterator for AvailabilityIter {
@@ -65,29 +68,12 @@ impl Iterator for AvailabilityIter {
         if self.current == NUM_HOURS_PER_WEEK {
             None
         } else {
-            // Rotating by wrapping the index here is how we shift timezones, since it causes everything to wrap
-            // around the week properly.
-
-            let mut wrapped_index = self.current;
-            if self.offset > 0 {
-                wrapped_index += self.offset as usize;
-                wrapped_index %= NUM_HOURS_PER_WEEK;
-            } else if self.offset < 0 {
-                if self.offset.abs() as usize > wrapped_index {
-                    wrapped_index =
-                        NUM_HOURS_PER_WEEK - (self.offset.abs() as usize - wrapped_index);
-                } else {
-                    wrapped_index -= self.offset.abs() as usize
-                }
-            }
-
-            let value = if wrapped_index < 128 {
-                self.availability0 & (1 << wrapped_index)
-            } else {
-                self.availability1 as u128 & (1 << (wrapped_index - 128))
-            };
+            let value = *self
+                .availability_bits
+                .get(self.current)
+                .expect("Invalid access in availability iterator");
             self.current += 1;
-            Some(value != 0)
+            Some(value)
         }
     }
 }
@@ -105,73 +91,71 @@ impl Student {
 
         let tz = timezones::get_by_name(timezone)?;
 
-        let mut availability0 = 0u128;
-        for (i, c) in availability.chars().take(128).enumerate() {
-            if c == '1' {
-                availability0 |= 1 << i;
-            }
-        }
+        let mut availability_bits = bitarr!(u32, Lsb0; 0; NUM_HOURS_PER_WEEK);
 
-        let mut availability1 = 0u64;
-        for (i, c) in availability
-            .chars()
-            .skip(128)
-            .take(NUM_USED_BITS_IN_AVAILABILITY1)
-            .enumerate()
-        {
-            if c == '1' {
-                availability1 |= 1 << i;
-            }
+        for (i, c) in availability.chars().enumerate() {
+            availability_bits.set(i, c == '1');
         }
 
         Some(Student {
             name: name.to_string(),
             timezone: tz,
-            availability0,
-            availability1,
+            availability_bits,
         })
     }
 
     pub fn from_encoded(encoded: &str) -> Option<Student> {
-        // Decode from base64(<name>|<timezone name>|<u128 as a base 10 string>|<u64 as a base 10 string>).
+        // Decode from base64(<name>|<timezone name>|<u64 as a base 10 string>|<u64 as a base 10 string>|...).
         let bytes = base64::decode(encoded).ok()?;
         let s = std::str::from_utf8(&bytes).ok()?;
         let pieces: Vec<_> = s.split('|').collect();
 
-        if pieces.len() != 4 {
+        if pieces.len() != 8 {
             None
         } else {
-            let availability0 = pieces[2].parse().ok()?;
-            let availability1 = pieces[3].parse().ok()?;
+            let mut data = [0; 6];
+            for (i, piece) in pieces.iter().skip(2).enumerate() {
+                data[i] = piece.parse().ok()?;
+            }
+
+            let availability_bits = BitArray::new(data);
 
             Some(Self {
                 name: pieces[0].to_string(),
                 timezone: timezones::get_by_name(pieces[1])?,
-                availability0,
-                availability1,
+                availability_bits,
             })
         }
     }
 
     fn availability_iter(&self, offset: i8) -> AvailabilityIter {
+        let mut availability_bits = self.availability_bits;
+        // We need to make sure we wrap the total bit array in a bitslice that once cares about
+        // the bits we care about, since otherwise we could rotate things "off screen".
+        // This is because bit array acts on the underlying storage, not the number of bits we told it.
+        let slice = availability_bits.split_at_mut(NUM_HOURS_PER_WEEK).0;
+        if offset > 0 {
+            slice.rotate_left(offset as usize)
+        } else {
+            slice.rotate_right(offset.abs() as usize)
+        };
+
         AvailabilityIter {
-            offset,
-            availability0: self.availability0,
-            availability1: self.availability1,
             current: 0,
+            availability_bits,
         }
     }
 
     pub fn encode(&self) -> String {
-        // Encode into base64(<name>|<timezone name>|<u128 as a base 10 string>|<u64 as a base 10 string>).
+        // Encode into base64(<name>|<timezone name>|<u32 as a base 10 string>|<32 as a base 10 string>|...).
 
-        let s = format!(
-            "{}|{}|{}|{}",
-            self.name,
-            self.timezone.name(),
-            self.availability0,
-            self.availability1
-        );
+        let mut s = format!("{}|{}", self.name, self.timezone.name(),);
+
+        let availability = self.availability_bits.as_raw_slice();
+        for i in availability {
+            let segment = format!("|{}", i);
+            s.push_str(&segment);
+        }
         base64::encode(s)
     }
 
@@ -199,8 +183,7 @@ impl Student {
 
         let old_offset = old_tz.get_offset_utc(&now);
         let new_offset = new_tz.get_offset_utc(&now);
-        let difference = old_offset.to_utc().whole_hours() - new_offset.to_utc().whole_hours();
-        difference
+        old_offset.to_utc().whole_hours() - new_offset.to_utc().whole_hours()
     }
 
     pub fn availability_in_timezone(&self, timezone: &str) -> Option<String> {
@@ -214,12 +197,10 @@ impl Student {
         Some(result)
     }
 
-    pub fn availability_array_in_utc(&self) -> Vec<u8> {
+    fn availability_array_in_utc(&self) -> AvailabilityBits {
         let utc = timezones::db::UTC;
         let difference = self.availability_offset_for_output_timezone(utc);
-        self.availability_iter(difference)
-            .map(|a| if a { 1 } else { 0 })
-            .collect()
+        self.availability_iter(difference).inner_availability()
     }
 
     pub fn name(&self) -> String {
@@ -329,14 +310,13 @@ mod tests {
     }
 
     #[test]
-    fn test_avail_offset_retarded() {
-        // Midnight hour on Monday in LA, 11 PM Sunday in Anchorage
-        let avail: String = "1"
-            .chars()
+    fn test_avail_offset_retarded_wraparound() {
+        let avail: String = std::iter::once('1')
             .chain(std::iter::repeat('0').take(NUM_HOURS_PER_WEEK - 1))
             .collect();
 
         let student = Student::new("test", "America/Los_Angeles", &avail).unwrap();
+
         let avail_result = student
             .availability_in_timezone("America/Anchorage")
             .unwrap();
@@ -350,20 +330,56 @@ mod tests {
     }
 
     #[test]
-    fn test_avail_offset_advanced() {
-        // Midnight hour on Monday in LA, 1 AM Monday in Boise
-        let avail: String = "1"
-            .chars()
+    fn test_avail_offset_retarded() {
+        let avail: String = std::iter::once('0')
+            .chain(std::iter::once('1'))
+            .chain(std::iter::repeat('0').take(NUM_HOURS_PER_WEEK - 2))
+            .collect();
+
+        let student = Student::new("test", "America/Los_Angeles", &avail).unwrap();
+
+        let avail_result = student
+            .availability_in_timezone("America/Anchorage")
+            .unwrap();
+
+        let expected: String = std::iter::once('1')
             .chain(std::iter::repeat('0').take(NUM_HOURS_PER_WEEK - 1))
+            .collect();
+
+        assert_eq!(avail_result, expected)
+    }
+
+    #[test]
+    fn test_avail_offset_advanced_wraparound() {
+        let avail: String = std::iter::repeat('0')
+            .take(NUM_HOURS_PER_WEEK - 1)
+            .chain(std::iter::once('1'))
             .collect();
 
         let student = Student::new("test", "America/Los_Angeles", &avail).unwrap();
         let avail_result = student.availability_in_timezone("America/Boise").unwrap();
 
-        let expected: String = "0"
-            .chars()
-            .chain("1".chars())
-            .chain(std::iter::repeat('0').take(NUM_HOURS_PER_WEEK - 2))
+        let expected: String = std::iter::once('1')
+            .chain(std::iter::repeat('0').take(NUM_HOURS_PER_WEEK - 1))
+            .collect();
+
+        assert_eq!(avail_result, expected)
+    }
+
+    #[test]
+    fn test_avail_offset_advanced() {
+        let avail: String = std::iter::repeat('0')
+            .take(NUM_HOURS_PER_WEEK - 2)
+            .chain(std::iter::once('1'))
+            .chain(std::iter::once('0'))
+            .collect();
+
+        let student = Student::new("test", "America/Los_Angeles", &avail).unwrap();
+        let avail_result = student.availability_in_timezone("America/Boise").unwrap();
+
+        let expected: String = std::iter::repeat('0')
+            .take(NUM_HOURS_PER_WEEK - 1)
+            .chain(std::iter::once('1'))
             .collect();
 
         assert_eq!(avail_result, expected)

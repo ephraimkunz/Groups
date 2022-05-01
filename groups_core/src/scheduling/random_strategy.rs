@@ -32,6 +32,7 @@ pub fn random_strategy(students: &[Student], group_size: usize) -> Vec<Group> {
     scores.resize_with(NUM_ITERATIONS, AssignmentScore::default);
     scores.iter_mut().for_each(|s| s.group_size = group_size);
 
+
     // #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
     // {
     //     use rayon::prelude::*;
@@ -94,7 +95,7 @@ fn generate_random_assignment_and_score(
         for i in 0..NUM_HOURS_PER_WEEK {
             let mut count = 0;
             for a in &availabilities {
-                count += a[i];
+                count += if *a.get(i).unwrap() { 1 } else { 0 };
             }
             num_students_avail_at_hour[i] = count;
         }
@@ -177,19 +178,6 @@ fn generate_random_assignment_and_score(
     }
 }
 
-struct Multizip<T>(Vec<T>);
-
-impl<T> Iterator for Multizip<T>
-where
-    T: Iterator,
-{
-    type Item = Vec<T::Item>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.iter_mut().map(Iterator::next).collect()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::scheduling::{random_students, NUM_HOURS_PER_DAY};
@@ -199,15 +187,15 @@ mod tests {
     #[test]
     fn test_random() {
         let students: Vec<_> = vec![
-            "MXxBZnJpY2EvQWJpZGphbnwxOTIwfDA=",
-            "MnxBZnJpY2EvQWJpZGphbnwzMDcyMHww",
-            "M3xBZnJpY2EvQWJpZGphbnw0OTE1MjB8MA==",
-            "NHxBZnJpY2EvQWJpZGphbnw3ODY0MzIwfDA=",
+            "VGVzdDF8QWZyaWNhL0FiaWRqYW58MTkyMHwwfDB8MHwwfDA=",
+            "VGVzdDN8QWZyaWNhL0FiaWRqYW58MzA3MjB8MHwwfDB8MHww",
+            "VGVzdDV8QWZyaWNhL0FiaWRqYW58NDkxNTIwfDB8MHwwfDB8MA==",
+            "VGVzdDd8QWZyaWNhL0FiaWRqYW58Nzg2NDMyMHwwfDB8MHwwfDA=",
             // First from above should match with first from here, and so on.
-            "NXxBZnJpY2EvQWJpZGphbnwxOTIwfDA=",
-            "NnxBZnJpY2EvQWJpZGphbnwzMDcyMHww",
-            "N3xBZnJpY2EvQWJpZGphbnw0OTE1MjB8MA==",
-            "OHxBZnJpY2EvQWJpZGphbnw3ODY0MzIwfDA=",
+            "VGVzdDJ8QWZyaWNhL0FiaWRqYW58MTkyMHwwfDB8MHwwfDA=",
+            "VGVzdDR8QWZyaWNhL0FiaWRqYW58MzA3MjB8MHwwfDB8MHww",
+            "VGVzdDZ8QWZyaWNhL0FiaWRqYW58NDkxNTIwfDB8MHwwfDB8MA==",
+            "VGVzdDh8QWZyaWNhL0FiaWRqYW58Nzg2NDMyMHwwfDB8MHwwfDA=",
         ]
         .iter()
         .map(|s| Student::from_encoded(s).unwrap())
@@ -220,31 +208,31 @@ mod tests {
             vec![
                 Group {
                     students: vec![
-                        "M3xBZnJpY2EvQWJpZGphbnw0OTE1MjB8MA==".to_string(),
-                        "N3xBZnJpY2EvQWJpZGphbnw0OTE1MjB8MA==".to_string(),
+                        "VGVzdDF8QWZyaWNhL0FiaWRqYW58MTkyMHwwfDB8MHwwfDA=".to_string(),
+                        "VGVzdDJ8QWZyaWNhL0FiaWRqYW58MTkyMHwwfDB8MHwwfDA=".to_string()
                     ],
-                    suggested_meet_times: vec![15, 16, 17, 18],
+                    suggested_meet_times: vec![7, 8, 9, 10]
                 },
                 Group {
                     students: vec![
-                        "MXxBZnJpY2EvQWJpZGphbnwxOTIwfDA=".to_string(),
-                        "NXxBZnJpY2EvQWJpZGphbnwxOTIwfDA=".to_string(),
+                        "VGVzdDN8QWZyaWNhL0FiaWRqYW58MzA3MjB8MHwwfDB8MHww".to_string(),
+                        "VGVzdDR8QWZyaWNhL0FiaWRqYW58MzA3MjB8MHwwfDB8MHww".to_string()
                     ],
-                    suggested_meet_times: vec![7, 8, 9, 10],
+                    suggested_meet_times: vec![11, 12, 13, 14]
                 },
                 Group {
                     students: vec![
-                        "MnxBZnJpY2EvQWJpZGphbnwzMDcyMHww".to_string(),
-                        "NnxBZnJpY2EvQWJpZGphbnwzMDcyMHww".to_string(),
+                        "VGVzdDV8QWZyaWNhL0FiaWRqYW58NDkxNTIwfDB8MHwwfDB8MA==".to_string(),
+                        "VGVzdDZ8QWZyaWNhL0FiaWRqYW58NDkxNTIwfDB8MHwwfDB8MA==".to_string()
                     ],
-                    suggested_meet_times: vec![11, 12, 13, 14],
+                    suggested_meet_times: vec![15, 16, 17, 18]
                 },
                 Group {
                     students: vec![
-                        "NHxBZnJpY2EvQWJpZGphbnw3ODY0MzIwfDA=".to_string(),
-                        "OHxBZnJpY2EvQWJpZGphbnw3ODY0MzIwfDA=".to_string(),
+                        "VGVzdDd8QWZyaWNhL0FiaWRqYW58Nzg2NDMyMHwwfDB8MHwwfDA=".to_string(),
+                        "VGVzdDh8QWZyaWNhL0FiaWRqYW58Nzg2NDMyMHwwfDB8MHwwfDA=".to_string()
                     ],
-                    suggested_meet_times: vec![19, 20, 21, 22],
+                    suggested_meet_times: vec![19, 20, 21, 22]
                 }
             ]
         )

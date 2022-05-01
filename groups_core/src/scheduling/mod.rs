@@ -91,7 +91,7 @@ mod tests {
     #[test]
     fn groups_no_size() {
         let students = [String::from(
-            "VGVzdHxBZnJpY2EvR2Fib3JvbmV8NTE1Mzk2MDc1NTIwfDA=",
+            "ZGZzZGZzfEFmcmljYS9BbGdpZXJzfDE5MjB8MjE0NzQ4Mzc2OHw3fDB8MHww=",
         )];
         assert_eq!(0, create_groups(&students, 0).len())
     }
@@ -101,7 +101,9 @@ mod tests {
         assert_eq!(
             1,
             create_groups(
-                &[String::from("VGVzdHxBZnJpY2EvS2lnYWxpfDMyMjEyMjU0NzIwfDA=")],
+                &[String::from(
+                    "ZGZzZGZzfEFmcmljYS9BbGdpZXJzfDE5MjB8MjE0NzQ4Mzc2OHw3fDB8MHww"
+                )],
                 3
             )
             .len()

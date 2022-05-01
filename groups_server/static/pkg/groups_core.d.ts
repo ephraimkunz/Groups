@@ -1,18 +1,18 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
-* @param {any} students
-* @param {number} group_size
-* @returns {any}
-*/
-export function create_groups_wasm(students: any, group_size: number): any;
-/**
 */
 export function tz_groups_init(): void;
 /**
 * @returns {any}
 */
 export function timezones_wasm(): any;
+/**
+* @param {any} students
+* @param {number} group_size
+* @returns {any}
+*/
+export function create_groups_wasm(students: any, group_size: number): any;
 /**
 */
 export class Student {
@@ -41,10 +41,6 @@ export class Student {
 */
   availability_in_timezone(timezone: string): string | undefined;
 /**
-* @returns {Uint8Array}
-*/
-  availability_array_in_utc(): Uint8Array;
-/**
 * @returns {string}
 */
   name(): string;
@@ -58,17 +54,16 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly create_groups_wasm: (a: number, b: number) => number;
   readonly timezones_wasm: () => number;
   readonly __wbg_student_free: (a: number) => void;
   readonly student_new: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly student_from_encoded: (a: number, b: number) => number;
   readonly student_encode: (a: number, b: number) => void;
   readonly student_availability_in_timezone: (a: number, b: number, c: number, d: number) => void;
-  readonly student_availability_array_in_utc: (a: number, b: number) => void;
   readonly student_name: (a: number, b: number) => void;
   readonly student_timezone: (a: number, b: number) => void;
   readonly tz_groups_init: () => void;
+  readonly create_groups_wasm: (a: number, b: number) => number;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
