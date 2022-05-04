@@ -13,8 +13,8 @@ struct AssignmentScore {
     score: usize,
     /// Size of each group.
     group_size: usize,
-    /// Students in group (first n are the first group, 2nd n are the second group, etc where n is group_size. Last group may be smaller.)
-    students: Vec<Student>,
+    /// Indices representing students in group (first n are the first group, 2nd n are the second group, etc where n is group_size. Last group may be smaller.)
+    students: Vec<usize>,
     /// For each group, list of available hours shared by the most group members (1) or all members (multiple). In UTC.
     meet_hours: Vec<Vec<usize>>,
 }
@@ -32,7 +32,6 @@ pub fn random_strategy(students: &[Student], group_size: usize) -> Vec<Group> {
     scores.resize_with(NUM_ITERATIONS, AssignmentScore::default);
     scores.iter_mut().for_each(|s| s.group_size = group_size);
 
-
     // #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
     // {
     //     use rayon::prelude::*;
@@ -41,7 +40,7 @@ pub fn random_strategy(students: &[Student], group_size: usize) -> Vec<Group> {
     //     });
     // }
 
-    // Rayon isn't well supported on WASM so do it sequentially there.
+    // // Rayon isn't well supported on WASM so do it sequentially there.
     // #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
     {
         scores.iter_mut().for_each(|score| {
@@ -50,17 +49,17 @@ pub fn random_strategy(students: &[Student], group_size: usize) -> Vec<Group> {
     }
 
     let best_score = scores.iter().max_by_key(|s| s.score).unwrap();
-    groups_from_assignment(best_score)
+    groups_from_assignment(best_score, &students)
 }
 
-fn groups_from_assignment(assignment: &AssignmentScore) -> Vec<Group> {
+fn groups_from_assignment(assignment: &AssignmentScore, students: &[Student]) -> Vec<Group> {
     let mut groups = vec![];
-    for (students, meet_times) in assignment
+    for (indices, meet_times) in assignment
         .students
         .chunks(assignment.group_size)
         .zip(assignment.meet_hours.iter())
     {
-        let mut encoded_students = students.iter().map(|s| s.encode()).collect_vec();
+        let mut encoded_students = indices.iter().map(|&i| students[i].encode()).collect_vec();
         encoded_students.sort_unstable(); // To make unit testing easier.
 
         let group = Group {
@@ -79,16 +78,16 @@ fn generate_random_assignment_and_score(
     group_size: usize,
     score: &mut AssignmentScore,
 ) {
-    let mut list = students.to_vec();
-    list.shuffle(&mut thread_rng());
+    let mut indices: Vec<_> = (0..students.len()).collect();
+    indices.shuffle(&mut thread_rng());
 
     let mut assignment_score: usize = 0;
     let mut assignment_hours = vec![];
 
-    for group in list.chunks(group_size) {
+    for group in indices.chunks(group_size) {
         let availabilities: Vec<_> = group
             .iter()
-            .map(|s| s.availability_array_in_utc())
+            .map(|&i| students[i].availability_array_in_utc())
             .collect();
 
         let mut num_students_avail_at_hour = vec![0; NUM_HOURS_PER_WEEK];
@@ -173,7 +172,7 @@ fn generate_random_assignment_and_score(
 
     if assignment_score > score.score {
         score.score = assignment_score;
-        score.students = list;
+        score.students = indices;
         score.meet_hours = assignment_hours;
     }
 }
