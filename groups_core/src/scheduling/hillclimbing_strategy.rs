@@ -1,10 +1,12 @@
-/// This strategy randomly assigns groups, then uses hieristics to score the assignment. The assignment
-/// with the highest score is chosen. Heuristics include consecutive number of overlapping hours shared
+/// This strategy randomly assigns a number of starting assignments, then uses hill climbing to find local maxima of
+/// each starting assignment by swapping students between groups in that assignment. The assignment
+/// with the highest score is chosen. Scoring is based on the number of consecutive overlapping hours shared
 /// by students in a group.
 use super::{Group, NUM_HOURS_PER_WEEK};
 use crate::Student;
 use itertools::Itertools;
 use num::Integer;
+use plotters::prelude::*;
 use rand::seq::SliceRandom;
 use rand::{thread_rng, Rng};
 
@@ -18,6 +20,9 @@ struct Assignment {
     students: Vec<usize>,
     /// For each group, list of available hours shared by the most group members (1) or all members (multiple). In UTC.
     meet_hours: Vec<Vec<usize>>,
+
+    /// For plotting the convergence over time (makes it easier to tune parameters)
+    score_history: Vec<usize>,
 }
 
 impl Assignment {
@@ -27,6 +32,7 @@ impl Assignment {
             group_size,
             students: (0..student_size).collect(),
             meet_hours: vec![],
+            score_history: vec![],
         }
     }
 
@@ -98,10 +104,11 @@ impl Assignment {
                 // in this group while other groups may have not enough.
                 // Also penalize consecutive slots less than this by treating as a single entry slots, to
                 // encourage these to get more slots.
+                const MAX_REWARDED_CONSECUTIVE_SLOTS: usize = 4;
 
                 let mut consecutive_slots = *length_of_consecutive_avail_slot.iter().max().unwrap();
-                consecutive_slots = consecutive_slots.min(4);
-                if consecutive_slots < 4 {
+                consecutive_slots = consecutive_slots.min(MAX_REWARDED_CONSECUTIVE_SLOTS);
+                if consecutive_slots < MAX_REWARDED_CONSECUTIVE_SLOTS {
                     consecutive_slots = 1;
                 }
 
@@ -131,8 +138,10 @@ impl Assignment {
         self.students.shuffle(&mut thread_rng());
         (self.score, self.meet_hours) =
             Self::score_assignment_and_get_meet_hours(&self.students, self.group_size, students);
+        self.score_history.push(self.score);
 
-        // Then hillclimb.
+        // Then hillclimb. Try a maximum of this number of neighbor solutions for any given assignment before
+        // giving up if we can't find a better solutions.
         const NUM_TRIES_FOR_BETTER_NEIGHBOR: usize = 1000;
 
         let mut iter = 0;
@@ -149,6 +158,7 @@ impl Assignment {
             if score > self.score {
                 self.students.swap(a, b);
                 self.score = score;
+                self.score_history.push(score);
                 self.meet_hours = meet_hours;
                 iter = 0;
             } else {
@@ -179,7 +189,7 @@ impl Assignment {
     }
 }
 
-pub fn random_strategy(students: &[Student], group_size: usize) -> Vec<Group> {
+pub fn run(students: &[Student], group_size: usize) -> Vec<Group> {
     if students.is_empty() || group_size == 0 {
         return vec![];
     }
@@ -209,8 +219,77 @@ pub fn random_strategy(students: &[Student], group_size: usize) -> Vec<Group> {
         });
     }
 
+    // Plotting
+    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+    plot_convergence(&assignments);
+
     let best_assignment = assignments.iter().max_by_key(|s| s.score).unwrap();
     best_assignment.groups(&students)
+}
+
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+fn plot_convergence(assignments: &[Assignment]) {
+    const NUM_LINES_TO_PLOT: usize = 10;
+
+    let max_iterations = assignments
+        .iter()
+        .take(NUM_LINES_TO_PLOT)
+        .max_by_key(|i| i.score_history.len())
+        .unwrap()
+        .score_history
+        .len();
+
+    let max_score = assignments
+        .iter()
+        .take(NUM_LINES_TO_PLOT)
+        .max_by_key(|s| s.score)
+        .unwrap()
+        .score;
+
+    let root = BitMapBackend::new("out.png", (1024, 768)).into_drawing_area();
+    root.fill(&WHITE).unwrap();
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(
+            "Group assignment hill-climbing convergence",
+            ("sans-serif", (5).percent_height()),
+        )
+        .set_label_area_size(LabelAreaPosition::Left, (8).percent())
+        .set_label_area_size(LabelAreaPosition::Bottom, (4).percent())
+        .margin((1).percent())
+        .build_cartesian_2d(0..max_iterations, 0..(max_score + 10))
+        .unwrap();
+
+    chart
+        .configure_mesh()
+        .x_desc("Iteration")
+        .y_desc("Score")
+        .draw()
+        .unwrap();
+
+    for (idx, assignment) in assignments.iter().take(NUM_LINES_TO_PLOT).enumerate() {
+        let color = Palette99::pick(idx).mix(0.9);
+        chart
+            .draw_series(LineSeries::new(
+                assignment
+                    .score_history
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &score)| (i, score)),
+                color.stroke_width(3),
+            ))
+            .unwrap();
+        // .label(series)
+        // .legend(move |(x, y)| Rectangle::new([(x, y - 5), (x + 10, y + 5)], color.filled()));
+    }
+
+    // chart
+    //     .configure_series_labels()
+    //     .border_style(&BLACK)
+    //     .draw().unwrap();
+
+    // To avoid the IO failure being ignored silently, we manually call the present function
+    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
 }
 
 #[cfg(test)]
@@ -236,7 +315,7 @@ mod tests {
         .map(|s| Student::from_encoded(s).unwrap())
         .collect();
 
-        let best_grouping = random_strategy(&students, 2);
+        let best_grouping = run(&students, 2);
         assert_eq!(best_grouping.len(), 4); // 4 groups of 2.
         assert_eq!(
             best_grouping,
@@ -276,7 +355,7 @@ mod tests {
     #[test]
     fn test_large_random() {
         let (students, seed) = random_students(50, None);
-        let best_grouping = random_strategy(&students, 5);
+        let best_grouping = run(&students, 5);
 
         let times = best_grouping
             .iter()

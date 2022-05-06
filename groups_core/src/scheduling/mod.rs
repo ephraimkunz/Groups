@@ -6,9 +6,7 @@ use rand::{thread_rng, Rng, RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use self::random_strategy::random_strategy;
-
-mod random_strategy;
+mod hillclimbing_strategy;
 
 pub const NUM_DAYS_PER_WEEK: usize = 7;
 pub const NUM_HOURS_PER_DAY: usize = 24;
@@ -32,7 +30,7 @@ pub fn create_groups(students_encoded: &[String], group_size: usize) -> Vec<Grou
         .iter()
         .filter_map(|s| Student::from_encoded(s))
         .collect();
-    random_strategy(&students, group_size)
+    hillclimbing_strategy::run(&students, group_size)
 }
 
 fn add_random_day_availability<R: Rng>(buffer: &mut String, rng: &mut R) {
