@@ -8,7 +8,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 
 #[derive(Default)]
-struct AssignmentScore {
+struct Assignment {
     /// Calculated score indicating goodness of group. Higher is better.
     score: usize,
     /// Size of each group.
@@ -17,6 +17,128 @@ struct AssignmentScore {
     students: Vec<usize>,
     /// For each group, list of available hours shared by the most group members (1) or all members (multiple). In UTC.
     meet_hours: Vec<Vec<usize>>,
+}
+
+impl Assignment {
+    fn new(student_size: usize, group_size: usize) -> Self {
+        Assignment {
+            score: 0,
+            group_size,
+            students: (0..student_size).collect(),
+            meet_hours: vec![],
+        }
+    }
+
+    fn find_best_grouping(&mut self, students: &[Student]) {
+        self.students.shuffle(&mut thread_rng());
+
+        for group in self.students.chunks(self.group_size) {
+            let availabilities: Vec<_> = group
+                .iter()
+                .map(|&i| students[i].availability_array_in_utc())
+                .collect();
+
+            let mut num_students_avail_at_hour = vec![0; NUM_HOURS_PER_WEEK];
+            for i in 0..NUM_HOURS_PER_WEEK {
+                let mut count = 0;
+                for a in &availabilities {
+                    count += if *a.get(i).unwrap() { 1 } else { 0 };
+                }
+                num_students_avail_at_hour[i] = count;
+            }
+
+            // The group score is either max number of students that can meet at one time if not all can meet at the same
+            // time, or if they can meet at the same time the num of consecutive hours they are all availalble * num students.
+            // Ths punishes groups where not all students can meet at the same time, and rewards those with multiple consecutive time slots.
+
+            let max_num_students_simultaneously_available =
+                *num_students_avail_at_hour.iter().max().unwrap();
+            if max_num_students_simultaneously_available < group.len() as u8 {
+                // No time slot includes all students. Find all the ones that include the max number of students and use
+                // those as the suggested times.
+
+                self.score += max_num_students_simultaneously_available as usize;
+                let hours_with_this_many_students: Vec<_> = num_students_avail_at_hour
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(hour, &student_count)| {
+                        if student_count == max_num_students_simultaneously_available {
+                            Some(hour)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                self.meet_hours.push(hours_with_this_many_students);
+            } else {
+                // At least one time slot includes all students. Find the width of the max consecutive time slot that includes all students.
+                // The width * height (num students in group) is the score.
+                // Use dynamic programming to find the widest time slot.
+                let mut length_of_consecutive_avail_slot =
+                    vec![0; num_students_avail_at_hour.len() + 1];
+                for i in 1..length_of_consecutive_avail_slot.len() {
+                    length_of_consecutive_avail_slot[i] = if num_students_avail_at_hour[i - 1]
+                        == max_num_students_simultaneously_available
+                    {
+                        1 + length_of_consecutive_avail_slot[i - 1]
+                    } else {
+                        1
+                    };
+                }
+
+                // Cap the max number of consecutive slots for scoring purposes.
+                // This helps make it so we don't inflate our score by just forcing more consecutive slots
+                // in this group while other groups may have not enough.
+                // Also penalize consecutive slots less than this by treating as a single entry slots, to
+                // encourage these to get more slots.
+
+                let mut consecutive_slots = *length_of_consecutive_avail_slot.iter().max().unwrap();
+                consecutive_slots = consecutive_slots.min(4);
+                if consecutive_slots < 4 {
+                    consecutive_slots = 1;
+                }
+
+                self.score +=
+                    consecutive_slots * max_num_students_simultaneously_available as usize;
+
+                let hours_with_this_many_students: Vec<_> = num_students_avail_at_hour
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(hour, &student_count)| {
+                        if student_count == max_num_students_simultaneously_available {
+                            Some(hour)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                self.meet_hours.push(hours_with_this_many_students);
+            }
+        }
+    }
+
+    fn groups(&self, students: &[Student]) -> Vec<Group> {
+        let mut groups = vec![];
+        for (indices, meet_times) in self
+            .students
+            .chunks(self.group_size)
+            .zip(self.meet_hours.iter())
+        {
+            let mut encoded_students = indices.iter().map(|&i| students[i].encode()).collect_vec();
+            encoded_students.sort_unstable(); // To make unit testing easier.
+
+            let group = Group {
+                students: encoded_students,
+                suggested_meet_times: meet_times.clone(),
+            };
+            groups.push(group);
+        }
+
+        groups.sort_unstable_by_key(|g| g.students[0].to_string()); // To make unit testing easier.
+        groups
+    }
 }
 
 const NUM_ITERATIONS: usize = 100_000;
@@ -28,153 +150,29 @@ pub fn random_strategy(students: &[Student], group_size: usize) -> Vec<Group> {
 
     let students = Vec::from(students);
 
-    let mut scores = vec![];
-    scores.resize_with(NUM_ITERATIONS, AssignmentScore::default);
-    scores.iter_mut().for_each(|s| s.group_size = group_size);
+    let mut assignments = Vec::with_capacity(NUM_ITERATIONS);
+    for _ in 0..NUM_ITERATIONS {
+        assignments.push(Assignment::new(students.len(), group_size))
+    }
 
-    // #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-    // {
-    //     use rayon::prelude::*;
-    //     scores.par_iter_mut().for_each(|score| {
-    //         generate_random_assignment_and_score(&students, group_size, score);
-    //     });
-    // }
-
-    // // Rayon isn't well supported on WASM so do it sequentially there.
-    // #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
     {
-        scores.iter_mut().for_each(|score| {
-            generate_random_assignment_and_score(&students, group_size, score);
+        use rayon::prelude::*;
+        assignments.par_iter_mut().for_each(|assignment| {
+            assignment.find_best_grouping(&students);
         });
     }
 
-    let best_score = scores.iter().max_by_key(|s| s.score).unwrap();
-    groups_from_assignment(best_score, &students)
-}
-
-fn groups_from_assignment(assignment: &AssignmentScore, students: &[Student]) -> Vec<Group> {
-    let mut groups = vec![];
-    for (indices, meet_times) in assignment
-        .students
-        .chunks(assignment.group_size)
-        .zip(assignment.meet_hours.iter())
+    // Rayon isn't well supported on WASM so do it sequentially there.
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
     {
-        let mut encoded_students = indices.iter().map(|&i| students[i].encode()).collect_vec();
-        encoded_students.sort_unstable(); // To make unit testing easier.
-
-        let group = Group {
-            students: encoded_students,
-            suggested_meet_times: meet_times.clone(),
-        };
-        groups.push(group);
+        assignments.iter_mut().for_each(|assignment| {
+            assignment.find_best_grouping(&students);
+        });
     }
 
-    groups.sort_unstable_by_key(|g| g.students[0].to_string()); // To make unit testing easier.
-    groups
-}
-
-fn generate_random_assignment_and_score(
-    students: &[Student],
-    group_size: usize,
-    score: &mut AssignmentScore,
-) {
-    let mut indices: Vec<_> = (0..students.len()).collect();
-    indices.shuffle(&mut thread_rng());
-
-    let mut assignment_score: usize = 0;
-    let mut assignment_hours = vec![];
-
-    for group in indices.chunks(group_size) {
-        let availabilities: Vec<_> = group
-            .iter()
-            .map(|&i| students[i].availability_array_in_utc())
-            .collect();
-
-        let mut num_students_avail_at_hour = vec![0; NUM_HOURS_PER_WEEK];
-        for i in 0..NUM_HOURS_PER_WEEK {
-            let mut count = 0;
-            for a in &availabilities {
-                count += if *a.get(i).unwrap() { 1 } else { 0 };
-            }
-            num_students_avail_at_hour[i] = count;
-        }
-
-        // The group score is either max number of students that can meet at one time if not all can meet at the same
-        // time, or if they can meet at the same time the num of consecutive hours they are all availalble * num students.
-        // Ths punishes groups where not all students can meet at the same time, and rewards those with multiple consecutive time slots.
-
-        let max_num_students_simultaneously_available =
-            *num_students_avail_at_hour.iter().max().unwrap();
-        if max_num_students_simultaneously_available < group.len() as u8 {
-            // No time slot includes all students. Find all the ones that include the max number of students and use
-            // those as the suggested times.
-
-            assignment_score += max_num_students_simultaneously_available as usize;
-            let hours_with_this_many_students: Vec<_> = num_students_avail_at_hour
-                .iter()
-                .enumerate()
-                .filter_map(|(hour, &student_count)| {
-                    if student_count == max_num_students_simultaneously_available {
-                        Some(hour)
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            assignment_hours.push(hours_with_this_many_students);
-        } else {
-            // At least one time slot includes all students. Find the width of the max consecutive time slot that includes all students.
-            // The width * height (num students in group) is the score.
-            // Use dynamic programming to find the widest time slot.
-            let mut length_of_consecutive_avail_slot =
-                vec![0; num_students_avail_at_hour.len() + 1];
-            for i in 1..length_of_consecutive_avail_slot.len() {
-                length_of_consecutive_avail_slot[i] = if num_students_avail_at_hour[i - 1]
-                    == max_num_students_simultaneously_available
-                {
-                    1 + length_of_consecutive_avail_slot[i - 1]
-                } else {
-                    1
-                };
-            }
-
-            // Cap the max number of consecutive slots for scoring purposes.
-            // This helps make it so we don't inflate our score by just forcing more consecutive slots
-            // in this group while other groups may have not enough.
-            // Also penalize consecutive slots less than this by treating as a single entry slots, to
-            // encourage these to get more slots.
-
-            let mut consecutive_slots = *length_of_consecutive_avail_slot.iter().max().unwrap();
-            consecutive_slots = consecutive_slots.min(4);
-            if consecutive_slots < 4 {
-                consecutive_slots = 1;
-            }
-
-            assignment_score +=
-                consecutive_slots * max_num_students_simultaneously_available as usize;
-
-            let hours_with_this_many_students: Vec<_> = num_students_avail_at_hour
-                .iter()
-                .enumerate()
-                .filter_map(|(hour, &student_count)| {
-                    if student_count == max_num_students_simultaneously_available {
-                        Some(hour)
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            assignment_hours.push(hours_with_this_many_students);
-        }
-    }
-
-    if assignment_score > score.score {
-        score.score = assignment_score;
-        score.students = indices;
-        score.meet_hours = assignment_hours;
-    }
+    let best_assignment = assignments.iter().max_by_key(|s| s.score).unwrap();
+    best_assignment.groups(&students)
 }
 
 #[cfg(test)]
