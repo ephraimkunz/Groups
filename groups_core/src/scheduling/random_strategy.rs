@@ -4,8 +4,9 @@
 use super::{Group, NUM_HOURS_PER_WEEK};
 use crate::Student;
 use itertools::Itertools;
+use num::Integer;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 
 #[derive(Default)]
 struct Assignment {
@@ -29,22 +30,27 @@ impl Assignment {
         }
     }
 
-    fn find_best_grouping(&mut self, students: &[Student]) {
-        self.students.shuffle(&mut thread_rng());
+    fn score_assignment_and_get_meet_hours(
+        groups: &[usize],
+        group_size: usize,
+        students: &[Student],
+    ) -> (usize, Vec<Vec<usize>>) {
+        let mut score = 0;
+        let mut meet_hours = Vec::with_capacity(Integer::div_ceil(&groups.len(), &group_size));
 
-        for group in self.students.chunks(self.group_size) {
+        for group in groups.chunks(group_size) {
             let availabilities: Vec<_> = group
                 .iter()
                 .map(|&i| students[i].availability_array_in_utc())
                 .collect();
 
             let mut num_students_avail_at_hour = vec![0; NUM_HOURS_PER_WEEK];
-            for i in 0..NUM_HOURS_PER_WEEK {
+            for (i, num_avail_at_hour_slot) in num_students_avail_at_hour.iter_mut().enumerate() {
                 let mut count = 0;
                 for a in &availabilities {
                     count += if *a.get(i).unwrap() { 1 } else { 0 };
                 }
-                num_students_avail_at_hour[i] = count;
+                *num_avail_at_hour_slot = count;
             }
 
             // The group score is either max number of students that can meet at one time if not all can meet at the same
@@ -57,7 +63,7 @@ impl Assignment {
                 // No time slot includes all students. Find all the ones that include the max number of students and use
                 // those as the suggested times.
 
-                self.score += max_num_students_simultaneously_available as usize;
+                score += max_num_students_simultaneously_available as usize;
                 let hours_with_this_many_students: Vec<_> = num_students_avail_at_hour
                     .iter()
                     .enumerate()
@@ -70,7 +76,7 @@ impl Assignment {
                     })
                     .collect();
 
-                self.meet_hours.push(hours_with_this_many_students);
+                meet_hours.push(hours_with_this_many_students);
             } else {
                 // At least one time slot includes all students. Find the width of the max consecutive time slot that includes all students.
                 // The width * height (num students in group) is the score.
@@ -99,8 +105,7 @@ impl Assignment {
                     consecutive_slots = 1;
                 }
 
-                self.score +=
-                    consecutive_slots * max_num_students_simultaneously_available as usize;
+                score += consecutive_slots * max_num_students_simultaneously_available as usize;
 
                 let hours_with_this_many_students: Vec<_> = num_students_avail_at_hour
                     .iter()
@@ -114,7 +119,40 @@ impl Assignment {
                     })
                     .collect();
 
-                self.meet_hours.push(hours_with_this_many_students);
+                meet_hours.push(hours_with_this_many_students);
+            }
+        }
+
+        (score, meet_hours)
+    }
+
+    fn find_best_grouping(&mut self, students: &[Student]) {
+        // Start with a randomly chosen group assignment.
+        self.students.shuffle(&mut thread_rng());
+        (self.score, self.meet_hours) =
+            Self::score_assignment_and_get_meet_hours(&self.students, self.group_size, students);
+
+        // Then hillclimb.
+        const NUM_TRIES_FOR_BETTER_NEIGHBOR: usize = 1000;
+
+        let mut iter = 0;
+        while iter < NUM_TRIES_FOR_BETTER_NEIGHBOR {
+            // Generate a neighbor by randomly swapping 2 elements.
+            let mut groups = self.students.clone();
+            let a = thread_rng().gen_range(0..groups.len());
+            let b = thread_rng().gen_range(0..groups.len());
+            groups.swap(a, b);
+
+            // See if it scores better. If so, keep it. Otherwise, generate another neighbor.
+            let (score, meet_hours) =
+                Self::score_assignment_and_get_meet_hours(&groups, self.group_size, students);
+            if score > self.score {
+                self.students.swap(a, b);
+                self.score = score;
+                self.meet_hours = meet_hours;
+                iter = 0;
+            } else {
+                iter += 1;
             }
         }
     }
@@ -141,8 +179,6 @@ impl Assignment {
     }
 }
 
-const NUM_ITERATIONS: usize = 100_000;
-
 pub fn random_strategy(students: &[Student], group_size: usize) -> Vec<Group> {
     if students.is_empty() || group_size == 0 {
         return vec![];
@@ -150,8 +186,10 @@ pub fn random_strategy(students: &[Student], group_size: usize) -> Vec<Group> {
 
     let students = Vec::from(students);
 
-    let mut assignments = Vec::with_capacity(NUM_ITERATIONS);
-    for _ in 0..NUM_ITERATIONS {
+    // When hillclimbing, we want multiple starting points to try to avoid getting stuck in a local minima.
+    const NUM_STARTING_POINTS: usize = 100;
+    let mut assignments = Vec::with_capacity(NUM_STARTING_POINTS);
+    for _ in 0..NUM_STARTING_POINTS {
         assignments.push(Assignment::new(students.len(), group_size))
     }
 

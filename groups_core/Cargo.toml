@@ -19,6 +19,7 @@ rand = "0.8.5"
 itertools = "0.10.3"
 rayon = "1.5.2"
 bitvec = "1.0.0"
+num = "0.4.0"
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies]
 js-sys = { version = "0.3" }
