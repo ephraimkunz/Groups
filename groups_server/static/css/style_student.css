@@ -1,0 +1,29 @@
+td {
+    text-align: center;
+}
+
+th {
+    text-align: center;
+}
+
+.td_unselected {
+    background: var(--white);
+    color: var(--dark);
+}
+
+.td_selected {
+    background: var(--success);
+    color: var(--light);
+}
+
+code {
+    margin-right: 1rem;
+}
+
+.schedule-code-parent {
+    visibility: hidden;
+    margin: 5px 0;
+    padding: 1rem;
+    border-radius: 10px;
+    display: inline-block;
+}

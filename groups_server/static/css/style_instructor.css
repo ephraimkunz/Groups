@@ -20,14 +20,6 @@ code {
     margin-right: 1rem;
 }
 
-.schedule-code-parent {
-    visibility: hidden;
-    margin: 5px 0;
-    padding: 1rem;
-    border-radius: 10px;
-    display: inline-block;
-}
-
 .schedule-display-table {
     table-layout: fixed;
     width: 5000px;
