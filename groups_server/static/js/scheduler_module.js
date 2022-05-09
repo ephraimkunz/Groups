@@ -16,7 +16,7 @@ init()
 
         // Setup table data.
         let schedule_ids = document.getElementById("schedule-ids")
-        schedule_ids.oninput = updateTableData 
+        schedule_ids.oninput = updateTableData
         let timezone = document.getElementById("inputTimezone")
         timezone.onchange = updateTableData
 
@@ -75,11 +75,61 @@ init()
 
         // Submit button handling
         let submit_button = document.getElementById("submit-button")
-        let groups_output = document.getElementById("groups_output")
         let group_size = document.getElementById("inputGroupSize")
+        let spinner = document.getElementById("group-spinner")
         submit_button.onclick = () => {
-            let schedules = schedule_ids.value.split(SPLIT_REGEX)
-            let groups = create_groups_wasm(schedules, group_size.value)
-            groups_output.innerHTML = JSON.stringify(groups, null, 2)
+            spinner.hidden = false
+
+            // Yield so that the button can update before the heavy computation.
+            requestAnimationFrame(() =>
+                requestAnimationFrame(function () {
+                    // Blocks render
+                    let schedules = schedule_ids.value.split(SPLIT_REGEX)
+                    let groups = create_groups_wasm(schedules, group_size.value)
+
+                    let table_body = document.getElementById('groups-table-body')
+                    var i = 1;
+                    for (var group of groups) {
+                        var row = table_body.insertRow()
+                        var cell = row.insertCell()
+                        cell.outerHTML = "<td><div>" + i + "</div></td>"
+
+                        cell = row.insertCell()
+                        let student_html = "<td><div>"
+                        for (var student of group.students) {
+                            student_html += Student.from_encoded(student).name() + "<br>"
+                        }
+                        cell.outerHTML = student_html + "</div></td>"
+
+                        cell = row.insertCell()
+                        let suggested_meet_times = ""
+                        for (var hour of group.suggested_meet_times) {
+                            var day = Math.floor(hour / 24);
+                            let hour_in_day = hour % 24;
+
+                            let hour_display = ""
+                            if (hour_in_day > 12) {
+                                let modded = hour_in_day - 12;
+                                hour_display = modded + " PM"
+                            } else {
+                                if (hour_in_day == 0) {
+                                    let modded = 12;
+                                    hour_display = modded + " AM"
+                                } else {
+                                    let modded = hour_in_day
+                                    hour_display = modded + " AM"
+                                }
+                            };
+
+                            let day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                            let day_display = day_names[day]
+                            suggested_meet_times += hour_display + " on " + day_display + "<br>"
+                        };
+
+                        cell.outerHTML = "<td><div>" + suggested_meet_times + "</div></td>"
+                        i ++;
+                    }
+                    spinner.hidden = true
+                }))
         }
     });

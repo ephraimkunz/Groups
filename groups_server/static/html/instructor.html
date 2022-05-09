@@ -57,14 +57,29 @@
     <form>
       <div class="form-group">
         <label for="inputGroupSize">Group Size</label>
-        <input type="number" min="1" max="100" class="form-control" id="inputGroupSize" placeholder="Enter the ideal number of student to be in each group">
+        <input type="number" min="1" max="100" class="form-control" id="inputGroupSize"
+          placeholder="Enter the ideal number of student to be in each group">
       </div>
-      <button type="button" class="btn btn-primary" id="submit-button">Create Groups</button>
-      <br>
-      <br>
-      <pre><code id="groups_output"></code></pre>
+      <button type="button" class="btn btn-primary" id="submit-button">
+        Create Groups
+        <span id="group-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"
+          hidden></span></button>
     </form>
-
+    <br>
+    <br>
+    <table class="table table-sm table-bordered">
+      <thead class="thead-light">
+        <tr>
+          <th>Group Number</th>
+          <th>Group Members</th>
+          <th>Suggested Meet Times</th>
+        </tr>
+      </thead>
+      <tbody id="groups-table-body">
+      </tbody>
+    </table>
+    <br>
+    <br>
     <script type="module" src="static/js/scheduler_module.js"></script>
 
     <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
