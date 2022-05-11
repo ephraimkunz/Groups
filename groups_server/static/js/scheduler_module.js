@@ -121,7 +121,7 @@ init()
                                 }
                             };
 
-                            let day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                            let day_names = ["Monday", "Tuesday", "Wedesday", "Thursday", "Friday", "Saturday", "Sunday"]
                             let day_display = day_names[day]
                             suggested_meet_times += hour_display + " on " + day_display + "<br>"
                         };
