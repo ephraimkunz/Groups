@@ -10,9 +10,10 @@ export function timezones_wasm(): any;
 /**
 * @param {any} students
 * @param {number} group_size
+* @param {string} output_timezone
 * @returns {any}
 */
-export function create_groups_wasm(students: any, group_size: number): any;
+export function create_groups_wasm(students: any, group_size: number, output_timezone: string): any;
 /**
 */
 export class Student {
@@ -63,7 +64,7 @@ export interface InitOutput {
   readonly student_name: (a: number, b: number) => void;
   readonly student_timezone: (a: number, b: number) => void;
   readonly tz_groups_init: () => void;
-  readonly create_groups_wasm: (a: number, b: number) => number;
+  readonly create_groups_wasm: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;

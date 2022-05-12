@@ -132,11 +132,14 @@ function addBorrowedObject(obj) {
 /**
 * @param {any} students
 * @param {number} group_size
+* @param {string} output_timezone
 * @returns {any}
 */
-export function create_groups_wasm(students, group_size) {
+export function create_groups_wasm(students, group_size, output_timezone) {
     try {
-        const ret = wasm.create_groups_wasm(addBorrowedObject(students), group_size);
+        const ptr0 = passStringToWasm0(output_timezone, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.create_groups_wasm(addBorrowedObject(students), group_size, ptr0, len0);
         return takeObject(ret);
     } finally {
         heap[stack_pointer++] = undefined;

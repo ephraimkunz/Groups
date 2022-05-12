@@ -10,7 +10,7 @@ export function student_availability_in_timezone(a: number, b: number, c: number
 export function student_name(a: number, b: number): void;
 export function student_timezone(a: number, b: number): void;
 export function tz_groups_init(): void;
-export function create_groups_wasm(a: number, b: number): number;
+export function create_groups_wasm(a: number, b: number, c: number, d: number): number;
 export function __wbindgen_malloc(a: number): number;
 export function __wbindgen_realloc(a: number, b: number, c: number): number;
 export function __wbindgen_add_to_stack_pointer(a: number): number;

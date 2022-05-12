@@ -5,6 +5,8 @@ init()
 
         const SPLIT_REGEX = /[\s,"]+/
 
+        const DEFAULT_TIMEZONE = 'America/Los_Angeles';
+
         // Setup table header.
         let hour_header = document.getElementById("hour-header")
         hour_header.insertCell(0).outerHTML = "<th></th>";
@@ -71,13 +73,23 @@ init()
             $('#inputTimezone').append('<option>' + element + '</option>');
         })
         $('#inputTimezone').selectpicker('refresh')
-        $('#inputTimezone').selectpicker('val', 'America/Los_Angeles')
+        $('#inputTimezone').selectpicker('val', DEFAULT_TIMEZONE)
 
         // Submit button handling
         let submit_button = document.getElementById("submit-button")
         let group_size = document.getElementById("inputGroupSize")
         let spinner = document.getElementById("group-spinner")
         submit_button.onclick = () => {
+            let output_timezone = document.getElementById("inputTimezone").value;
+
+            // Remove any existing data rows.
+            var tableHeaderRowCount = 1;
+            var table = document.getElementById("groups-table");
+            var rowCount = table.rows.length;
+            for (var i = tableHeaderRowCount; i < rowCount; i++) {
+                table.deleteRow(tableHeaderRowCount);
+            }
+
             spinner.hidden = false
 
             // Yield so that the button can update before the heavy computation.
@@ -85,8 +97,19 @@ init()
                 requestAnimationFrame(function () {
                     // Blocks render
                     let schedules = schedule_ids.value.split(SPLIT_REGEX)
-                    let groups = create_groups_wasm(schedules, group_size.value)
+                    let groups = create_groups_wasm(schedules, group_size.value, output_timezone)
 
+                    // Update schedule ids (and by extension the table)
+                    let new_schedule_ids = []
+                    for (var group of groups) {
+                        for (var student of group.students) {
+                            new_schedule_ids.push(student)
+                        }
+                    }
+                    schedule_ids.value = new_schedule_ids.join("\n")
+                    updateTableData()
+
+                    // Add new data rows.
                     let table_body = document.getElementById('groups-table-body')
                     var i = 1;
                     for (var group of groups) {
@@ -103,31 +126,12 @@ init()
 
                         cell = row.insertCell()
                         let suggested_meet_times = ""
-                        for (var hour of group.suggested_meet_times) {
-                            var day = Math.floor(hour / 24);
-                            let hour_in_day = hour % 24;
-
-                            let hour_display = ""
-                            if (hour_in_day > 12) {
-                                let modded = hour_in_day - 12;
-                                hour_display = modded + " PM"
-                            } else {
-                                if (hour_in_day == 0) {
-                                    let modded = 12;
-                                    hour_display = modded + " AM"
-                                } else {
-                                    let modded = hour_in_day
-                                    hour_display = modded + " AM"
-                                }
-                            };
-
-                            let day_names = ["Monday", "Tuesday", "Wedesday", "Thursday", "Friday", "Saturday", "Sunday"]
-                            let day_display = day_names[day]
-                            suggested_meet_times += hour_display + " on " + day_display + "<br>"
+                        for (var string of group.suggested_meet_times) {
+                            suggested_meet_times += string + " (" + output_timezone + ")<br>"
                         };
 
                         cell.outerHTML = "<td><div>" + suggested_meet_times + "</div></td>"
-                        i ++;
+                        i++;
                     }
                     spinner.hidden = true
                 }))

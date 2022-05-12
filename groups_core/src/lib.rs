@@ -32,6 +32,19 @@ pub fn timezones() -> Vec<String> {
     names
 }
 
+fn now() -> OffsetDateTime {
+    // Shim getting the now UTC date since the time crate doesn't support WASM and will panic otherwise.
+    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+    {
+        time::OffsetDateTime::now_utc()
+    }
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+    {
+        OffsetDateTime::UNIX_EPOCH
+            + time::Duration::milliseconds(js_sys::Date::new_0().get_time() as i64)
+    }
+}
+
 type AvailabilityBits = BitArr!(for NUM_HOURS_PER_WEEK, in u32, Lsb0);
 
 #[wasm_bindgen]
@@ -159,24 +172,11 @@ impl Student {
         base64::encode(s)
     }
 
-    fn now(&self) -> OffsetDateTime {
-        // Shim getting the now UTC date since the time crate doesn't support WASM and will panic otherwise.
-        #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-        {
-            time::OffsetDateTime::now_utc()
-        }
-        #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-        {
-            OffsetDateTime::UNIX_EPOCH
-                + time::Duration::milliseconds(js_sys::Date::new_0().get_time() as i64)
-        }
-    }
-
     fn availability_offset_for_output_timezone(&self, timezone: &Tz) -> i8 {
         let old_tz = self.timezone;
         let new_tz = timezone;
 
-        let now = self.now();
+        let now = now();
 
         // We're going to assume here that all the timezones we care about have hour granularity offsets,
         // which isn't true for all timezones but simplifies things a lot.
