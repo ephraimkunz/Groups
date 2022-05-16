@@ -1,6 +1,7 @@
 use crate::{now, timezones};
 
 use super::Student;
+use fake::Fake;
 use rand::{prelude::SmallRng, seq::SliceRandom};
 use rand::{thread_rng, Rng, RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
@@ -127,8 +128,9 @@ fn random_students(count: usize, seed: Option<u64>) -> (Vec<Student>, u64) {
     (
         (0..count)
             .into_iter()
-            .map(|i| {
-                let name = format!("Student {i}");
+            .map(|_| {
+                use fake::faker::name::en::Name;
+                let name: String = Name().fake();
                 let timezone = timezones.choose(&mut rng).unwrap();
                 let availability = random_week_availability(&mut rng);
 
