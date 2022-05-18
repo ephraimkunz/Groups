@@ -766,6 +766,8 @@ dependencies = [
 name = "groups_server"
 version = "0.1.0"
 dependencies = [
+ "groups_core",
+ "itertools",
  "rocket",
  "shuttle-service",
 ]

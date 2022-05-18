@@ -279,24 +279,16 @@ fn plot_convergence(assignments: &[Assignment]) {
                 color.stroke_width(3),
             ))
             .unwrap();
-        // .label(series)
-        // .legend(move |(x, y)| Rectangle::new([(x, y - 5), (x + 10, y + 5)], color.filled()));
     }
-
-    // chart
-    //     .configure_series_labels()
-    //     .border_style(&BLACK)
-    //     .draw().unwrap();
-
     // To avoid the IO failure being ignored silently, we manually call the present function
     root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::scheduling::{random_students, NUM_HOURS_PER_DAY};
-
     use super::*;
+    use crate::random::random_students;
+    use crate::scheduling::NUM_HOURS_PER_DAY;
 
     #[test]
     fn test_random() {

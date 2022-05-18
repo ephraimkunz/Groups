@@ -5,6 +5,7 @@ use time::OffsetDateTime;
 use time_tz::{timezones, Offset, TimeZone, Tz};
 use wasm_bindgen::prelude::*;
 
+pub mod random;
 pub mod scheduling;
 
 // Use https://rustwasm.github.io/docs/wasm-bindgen/reference/arbitrary-data-with-serde.html
