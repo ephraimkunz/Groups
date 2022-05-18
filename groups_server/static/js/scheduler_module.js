@@ -41,8 +41,6 @@ init()
                     continue
                 }
 
-                console.log(schedule_id)
-
                 let student = Student.from_encoded(schedule_id)
                 if (!student) {
                     continue

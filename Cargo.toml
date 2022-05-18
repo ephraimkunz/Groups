@@ -3,6 +3,7 @@
 members = [
     "groups_server",
     "groups_core",
+    "groups_server_local"
 ]
 
 [profile.release]

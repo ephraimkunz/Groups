@@ -28,11 +28,14 @@ async fn html_file_named(filename: &str) -> Option<NamedFile> {
     NamedFile::open(path).await.ok()
 }
 
+pub async fn build_rocket() -> Rocket<Build> {
+    rocket::build()
+        .mount("/", routes![index, student, instructor])
+        .mount("/static", FileServer::from(relative!("static")))
+}
+
 #[shuttle_service::main]
 async fn init() -> Result<Rocket<Build>, shuttle_service::Error> {
-    let rocket = rocket::build()
-        .mount("/", routes![index, student, instructor])
-        .mount("/static", FileServer::from(relative!("static")));
-
+    let rocket = build_rocket().await;
     Ok(rocket)
 }

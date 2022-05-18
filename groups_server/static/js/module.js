@@ -99,7 +99,6 @@ init()
 
 
             // Then, check if the button should be enabled.
-            console.log("validateGetSchedulerCodeButton")
             let name = document.getElementById("inputName").value;
             let timezone = document.getElementById("inputTimezone").value;
             let avail = document.getElementById("inputAvailability")

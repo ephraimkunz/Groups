@@ -9,6 +9,9 @@ Questions or issues can be resolved by clicking on the issues tab above an openi
 
 ## Development Information
 
+### Run local webserver for testing
+Run `build_and_test_site_local.sh` in project root. A local webserver will be spun up and the IP address + port will be printed to the console.
+
 ### Deploy
 Run `build_and_deploy_site.sh` in project root.
 
