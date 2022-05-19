@@ -1,11 +1,9 @@
 #[macro_use]
 extern crate rocket;
 
-use std::path::PathBuf;
-
-use itertools::Itertools;
 use rocket::fs::{relative, FileServer, NamedFile};
 use rocket::{Build, Rocket};
+use std::path::PathBuf;
 
 #[get("/")]
 async fn index() -> Option<NamedFile> {
@@ -22,12 +20,6 @@ async fn instructor() -> Option<NamedFile> {
     html_file_named("instructor").await
 }
 
-#[get("/random")]
-async fn random() -> String {
-    let (students, _) = groups_core::random::random_students(50, None);
-    students.iter().map(|s| s.encode()).join("\n")
-}
-
 async fn html_file_named(filename: &str) -> Option<NamedFile> {
     let mut path = PathBuf::from(relative!("static"));
     path.push("html");
@@ -37,7 +29,7 @@ async fn html_file_named(filename: &str) -> Option<NamedFile> {
 
 pub async fn build_rocket() -> Rocket<Build> {
     rocket::build()
-        .mount("/", routes![index, student, instructor, random])
+        .mount("/", routes![index, student, instructor])
         .mount("/static", FileServer::from(relative!("static")))
 }
 

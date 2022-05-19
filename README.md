@@ -15,8 +15,9 @@ Run `build_and_test_site_local.sh` in project root. A local webserver will be sp
 ### Deploy
 Run `build_and_deploy_site.sh` in project root.
 
-### Usage
-BASE_URL is printed as a result of deploying.
-* Students: Visit BASE_URL/student. Fill out the form there and send your instructor the schedule code you receive, either through email, a survey, etc.
-* Instructors: Visit BASE_URL/instructor. Paste in all of the student schedule codes you received. You can use the interface to manually split into groups based on availability, or have it done automatically.
+### Endpoints
+BASE_URL is printed as a result of deploying or running the local webserver.
+* BASE_URL/student. Students fill out the form there and send the instructor the schedule code they receive, either through email, a survey, etc.
+* BASE_URL/instructor. Instructors paste in all of the student schedule codes they receive. They can use the interface to manually split into groups based on availability, or have it done automatically.
+* BASE_URL/random (local webserver only). Get 50 random schedule codes for testing instructor functionality.
   
