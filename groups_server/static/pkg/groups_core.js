@@ -21,9 +21,7 @@ function takeObject(idx) {
     return ret;
 }
 
-const cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
-
-cachedTextDecoder.decode();
+let WASM_VECTOR_LEN = 0;
 
 let cachegetUint8Memory0 = null;
 function getUint8Memory0() {
@@ -32,21 +30,6 @@ function getUint8Memory0() {
     }
     return cachegetUint8Memory0;
 }
-
-function getStringFromWasm0(ptr, len) {
-    return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
-}
-
-function addHeapObject(obj) {
-    if (heap_next === heap.length) heap.push(heap.length + 1);
-    const idx = heap_next;
-    heap_next = heap[idx];
-
-    heap[idx] = obj;
-    return idx;
-}
-
-let WASM_VECTOR_LEN = 0;
 
 const cachedTextEncoder = new TextEncoder('utf-8');
 
@@ -108,18 +91,22 @@ function getInt32Memory0() {
     }
     return cachegetInt32Memory0;
 }
-/**
-*/
-export function tz_groups_init() {
-    wasm.tz_groups_init();
+
+const cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+
+cachedTextDecoder.decode();
+
+function getStringFromWasm0(ptr, len) {
+    return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 
-/**
-* @returns {any}
-*/
-export function timezones_wasm() {
-    const ret = wasm.timezones_wasm();
-    return takeObject(ret);
+function addHeapObject(obj) {
+    if (heap_next === heap.length) heap.push(heap.length + 1);
+    const idx = heap_next;
+    heap_next = heap[idx];
+
+    heap[idx] = obj;
+    return idx;
 }
 
 let stack_pointer = 32;
@@ -130,6 +117,11 @@ function addBorrowedObject(obj) {
     return stack_pointer;
 }
 /**
+* Same as `create_groups`, but suitable for calling from WASM because it takes and returns JSValues.
+* `students` is a Javascript array of encoded Student (strings).
+* `output_timezone` is the timezone which will be used when generating the `suggested_meet_times` array in
+* each output group.
+* Returns a Javascript array of JSON objects representing groups.
 * @param {any} students
 * @param {number} group_size
 * @param {string} output_timezone
@@ -146,6 +138,23 @@ export function create_groups_wasm(students, group_size, output_timezone) {
     }
 }
 
+/**
+* Initializes the library for use in WASM. This function should be called before any others in this library in a
+* WASM context. It only needs to be called once.
+*/
+export function groups_core_init_wasm() {
+    wasm.groups_core_init_wasm();
+}
+
+/**
+* Like `timezones`, but returns a Javascript array of strings for use in WASM.
+* @returns {any}
+*/
+export function timezones_wasm() {
+    const ret = wasm.timezones_wasm();
+    return takeObject(ret);
+}
+
 function handleError(f, args) {
     try {
         return f.apply(this, args);
@@ -158,6 +167,7 @@ function getArrayU8FromWasm0(ptr, len) {
     return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
 /**
+* Represents a student and their availability to meet with a group.
 */
 export class Student {
 
@@ -180,9 +190,9 @@ export class Student {
         wasm.__wbg_student_free(ptr);
     }
     /**
-    * Create a student with a name, timezone name (one of the values returned by the timezones() function),
-    * and availability string in that timezone
-    * (string of NUM_HOURS_PER_WEEK 1s and 0s, where 1 indicated available that hour, starting Monday at 12 AM).
+    * Create a student with a name, timezone name (one of the values returned by the `timezones()` function),
+    * and availability string in that timezone (string of length `NUM_HOURS_PER_WEEK` containing 1s and 0s,
+    * where 1 indicates the student is available that hour, with the first element representing starting Monday at 12 AM, etc).
     * @param {string} name
     * @param {string} timezone
     * @param {string} availability
@@ -198,6 +208,8 @@ export class Student {
         return ret === 0 ? undefined : Student.__wrap(ret);
     }
     /**
+    * Reconstructs a `Student` from a string produced by `encode()`. Returns None
+    * if `encoded` doesn't represent a valid student.
     * @param {string} encoded
     * @returns {Student | undefined}
     */
@@ -208,6 +220,8 @@ export class Student {
         return ret === 0 ? undefined : Student.__wrap(ret);
     }
     /**
+    * Encode this student into a schedule code. This encapsulates all the information needed to
+    * reconstitute a Student object later, and is a little bit obfuscated.
     * @returns {string}
     */
     encode() {
@@ -223,6 +237,10 @@ export class Student {
         }
     }
     /**
+    * Returns a string representing the students availability in `timezone`. Returns
+    * None if the timezone is not one of the timezones returned by `timezones()`.
+    * The returned string is `NUM_HOURS_PER_WEEK` characters long, where a '1' means the
+    * student is available and a '0' means the student is not available.
     * @param {string} timezone
     * @returns {string | undefined}
     */
@@ -245,6 +263,7 @@ export class Student {
         }
     }
     /**
+    * The student's name.
     * @returns {string}
     */
     name() {
@@ -260,6 +279,7 @@ export class Student {
         }
     }
     /**
+    * The student's timezone.
     * @returns {string}
     */
     timezone() {
@@ -316,10 +336,6 @@ async function init(input) {
     imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
         takeObject(arg0);
     };
-    imports.wbg.__wbindgen_json_parse = function(arg0, arg1) {
-        const ret = JSON.parse(getStringFromWasm0(arg0, arg1));
-        return addHeapObject(ret);
-    };
     imports.wbg.__wbindgen_json_serialize = function(arg0, arg1) {
         const obj = getObject(arg1);
         const ret = JSON.stringify(obj === undefined ? null : obj);
@@ -327,6 +343,10 @@ async function init(input) {
         const len0 = WASM_VECTOR_LEN;
         getInt32Memory0()[arg0 / 4 + 1] = len0;
         getInt32Memory0()[arg0 / 4 + 0] = ptr0;
+    };
+    imports.wbg.__wbindgen_json_parse = function(arg0, arg1) {
+        const ret = JSON.parse(getStringFromWasm0(arg0, arg1));
+        return addHeapObject(ret);
     };
     imports.wbg.__wbg_new_693216e109162396 = function() {
         const ret = new Error();

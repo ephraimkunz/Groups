@@ -1,9 +1,9 @@
+use crate::student::Student;
 /// This strategy randomly assigns a number of starting assignments, then uses hill climbing to find local maxima of
 /// each starting assignment by swapping students between groups in that assignment. The assignment
 /// with the highest score is chosen. Scoring is based on the number of consecutive overlapping hours shared
 /// by students in a group.
-use super::{Group, NUM_HOURS_PER_WEEK};
-use crate::Student;
+use crate::{constants::NUM_HOURS_PER_WEEK, scheduling::Group};
 use itertools::Itertools;
 use num::Integer;
 use plotters::prelude::*;
@@ -287,8 +287,8 @@ fn plot_convergence(assignments: &[Assignment]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::NUM_HOURS_PER_DAY;
     use crate::random::random_students;
-    use crate::scheduling::NUM_HOURS_PER_DAY;
 
     #[test]
     fn test_random() {

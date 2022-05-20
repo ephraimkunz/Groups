@@ -1,7 +1,7 @@
-import init, { timezones_wasm, Student, tz_groups_init } from "../pkg/groups_core.js"
+import init, { timezones_wasm, Student, groups_core_init_wasm } from "../pkg/groups_core.js"
 init()
     .then(() => {
-        tz_groups_init()
+        groups_core_init_wasm()
 
         // Populate timezone dropdown
         populateTimezoneField()
@@ -38,7 +38,7 @@ function scheduleCodeField() {
 }
 
 function populateTimezoneField() {
-    let timezones = timezones_wasm().names
+    let timezones = timezones_wasm()
     timezones.forEach(element => {
         $('#inputTimezone').append('<option>' + element + '</option>')
     })

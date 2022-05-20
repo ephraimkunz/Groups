@@ -1,11 +1,11 @@
-import init, { timezones_wasm, Student, tz_groups_init, create_groups_wasm } from "../pkg/groups_core.js";
+import init, { timezones_wasm, Student, groups_core_init_wasm, create_groups_wasm } from "../pkg/groups_core.js";
 
 const SPLIT_REGEX = /[\s,"]+/
 const DEFAULT_TIMEZONE = 'America/Los_Angeles';
 
 init()
     .then(() => {
-        tz_groups_init();
+        groups_core_init_wasm();
 
         // Setup table header.
         setupTableHeaders()
@@ -33,7 +33,7 @@ function inputTimezoneField() {
 }
 
 function populateTimezoneDropdown() {
-    let timezones = timezones_wasm().names
+    let timezones = timezones_wasm()
     timezones.forEach(element => {
         $('#inputTimezone').append('<option>' + element + '</option>');
     })

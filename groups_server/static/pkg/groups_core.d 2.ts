@@ -13,58 +13,47 @@
 */
 export function create_groups_wasm(students: any, group_size: number, output_timezone: string): any;
 /**
-* Initializes the library for use in WASM. This function should be called before any others in this library in a
+* Initializes the library for use in WASM. This function should be called before any others in this library in a 
 * WASM context. It only needs to be called once.
 */
-export function groups_core_init_wasm(): void;
+export function groups_core_init(): void;
 /**
 * Like `timezones`, but returns a Javascript array of strings for use in WASM.
 * @returns {any}
 */
 export function timezones_wasm(): any;
 /**
-* Represents a student and their availability to meet with a group.
 */
 export class Student {
   free(): void;
 /**
-* Create a student with a name, timezone name (one of the values returned by the `timezones()` function),
-* and availability string in that timezone (string of length `NUM_HOURS_PER_WEEK` containing 1s and 0s,
-* where 1 indicates the student is available that hour, with the first element representing starting Monday at 12 AM, etc).
+* Create a student with a name, timezone name (one of the values returned by the timezones() function),
+* and availability string in that timezone
+* (string of NUM_HOURS_PER_WEEK 1s and 0s, where 1 indicated available that hour, starting Monday at 12 AM).
 * @param {string} name
 * @param {string} timezone
 * @param {string} availability
 */
   constructor(name: string, timezone: string, availability: string);
 /**
-* Reconstructs a `Student` from a string produced by `encode()`. Returns None
-* if `encoded` doesn't represent a valid student.
 * @param {string} encoded
 * @returns {Student | undefined}
 */
   static from_encoded(encoded: string): Student | undefined;
 /**
-* Encode this student into a schedule code. This encapsulates all the information needed to
-* reconstitute a Student object later, and is a little bit obfuscated.
 * @returns {string}
 */
   encode(): string;
 /**
-* Returns a string representing the students availability in `timezone`. Returns
-* None if the timezone is not one of the timezones returned by `timezones()`.
-* The returned string is `NUM_HOURS_PER_WEEK` characters long, where a '1' means the
-* student is available and a '0' means the student is not available.
 * @param {string} timezone
 * @returns {string | undefined}
 */
   availability_in_timezone(timezone: string): string | undefined;
 /**
-* The student's name.
 * @returns {string}
 */
   name(): string;
 /**
-* The student's timezone.
 * @returns {string}
 */
   timezone(): string;
@@ -75,7 +64,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly create_groups_wasm: (a: number, b: number, c: number, d: number) => number;
-  readonly groups_core_init_wasm: () => void;
+  readonly groups_core_init: () => void;
   readonly __wbg_student_free: (a: number) => void;
   readonly student_new: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly student_from_encoded: (a: number, b: number) => number;

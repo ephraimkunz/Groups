@@ -1,5 +1,5 @@
-use crate::scheduling::{NUM_DAYS_PER_WEEK, NUM_HOURS_PER_WEEK};
-use crate::{timezones, Student};
+use crate::constants::{NUM_DAYS_PER_WEEK, NUM_HOURS_PER_WEEK};
+use crate::{student::Student, timezones::timezones};
 use fake::Fake;
 use rand::{prelude::SmallRng, seq::SliceRandom};
 use rand::{thread_rng, Rng, RngCore, SeedableRng};
@@ -25,6 +25,8 @@ fn random_week_availability<R: Rng>(rng: &mut R) -> String {
     week_availability
 }
 
+/// Generate `count` random student, optionally seeding the RNG with `seed`.
+/// Returns vec of students and the seed used.
 pub fn random_students(count: usize, seed: Option<u64>) -> (Vec<Student>, u64) {
     let timezones = timezones();
     let seed = match seed {

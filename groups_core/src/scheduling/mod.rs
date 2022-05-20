@@ -1,31 +1,34 @@
-use crate::{now, timezones};
-
-use super::Student;
+use crate::constants::NUM_HOURS_PER_WEEK;
+use crate::student::Student;
 use serde::{Deserialize, Serialize};
-use time_tz::{Offset, TimeZone};
+use time_tz::{timezones, Offset, TimeZone};
 use wasm_bindgen::prelude::*;
 
 mod hillclimbing_strategy;
 
-pub const NUM_DAYS_PER_WEEK: usize = 7;
-pub const NUM_HOURS_PER_DAY: usize = 24;
-pub const NUM_HOURS_PER_WEEK: usize = NUM_HOURS_PER_DAY * NUM_DAYS_PER_WEEK;
-
-/// Internal representation of a group, where students is a vector of encoded Student and
-/// suggested_meet_times is a vector of hours in the week when students are all available in UTC.
+/// A group of students, along with suggested meet times.
 #[derive(Debug, PartialEq)]
 pub struct Group {
-    students: Vec<String>,
-    suggested_meet_times: Vec<usize>,
+    /// Vector of encoded Student.
+    pub students: Vec<String>,
+
+    /// Vector of hours in the week when students are all available (in UTC).
+    /// 0 = Monday at 12 AM, 1 = Monday at 1 AM, etc.
+    pub suggested_meet_times: Vec<usize>,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct DisplayGroup {
+struct DisplayGroup {
     students: Vec<String>,
     suggested_meet_times: Vec<String>,
 }
 
 #[wasm_bindgen]
+/// Same as `create_groups`, but suitable for calling from WASM because it takes and returns JSValues.
+/// `students` is a Javascript array of encoded Student (strings).
+/// `output_timezone` is the timezone which will be used when generating the `suggested_meet_times` array in
+/// each output group.
+/// Returns a Javascript array of JSON objects representing groups.
 pub fn create_groups_wasm(
     students: &JsValue,
     group_size: usize,
@@ -37,6 +40,8 @@ pub fn create_groups_wasm(
     JsValue::from_serde(&display).unwrap()
 }
 
+/// Returns the best grouping of students, given the total students in the class and
+/// the maximum size of a group.
 pub fn create_groups(students_encoded: &[String], group_size: usize) -> Vec<Group> {
     let students: Vec<Student> = students_encoded
         .iter()
@@ -57,7 +62,7 @@ fn display_groups(groups: &[Group], timezone: &str) -> Vec<DisplayGroup> {
 
 fn pretty_hours(hours_in_utc: &[usize], output_timezone: &str) -> Vec<String> {
     let tz = timezones::get_by_name(output_timezone).unwrap();
-    let now = now();
+    let now = crate::now();
     let offset = tz.get_offset_utc(&now);
     let rotate = offset.to_utc().whole_hours() as i16;
 
