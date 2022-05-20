@@ -1,6 +1,19 @@
 # Groups
 Student and instructor facing website that allow students to provide availability and instructors to divide students into groups based on availability.
 
+* Students get to advertise their availability in their own timezone. No need for timezone conversions.
+* Instructors can manually group students based on a grid layout, or use an automated scheduler with a configurable group size that seeks to maximize the number of hours all members of the group are available.
+
+## Student Site
+Empty           |  Filled Out
+:-------------------------:|:-------------------------:
+![](https://user-images.githubusercontent.com/10914093/169444643-27cbbf38-682b-45a1-b22c-9d5b0d93f5f9.png)  |  ![](https://user-images.githubusercontent.com/10914093/169444640-6ec85094-93fc-42e8-9acc-985d88261cf6.png)
+
+## Instructor Site
+Empty           |  Filled Out
+:-------------------------:|:-------------------------:
+![](https://user-images.githubusercontent.com/10914093/169445317-185c2eb1-2d6c-472e-92c4-6f87e5070017.png)  |  ![](https://user-images.githubusercontent.com/10914093/169445327-ad1476fa-6719-469c-8653-80de64549bfe.png)
+
 ## Live Site
 The site is live at https://groups-server.shuttleapp.rs/student for students and https://groups-server.shuttleapp.rs/instructor for instructors.
 
