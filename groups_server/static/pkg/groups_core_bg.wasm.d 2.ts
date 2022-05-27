@@ -2,7 +2,7 @@
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
 export function create_groups_wasm(a: number, b: number, c: number, d: number): number;
-export function groups_core_init(): void;
+export function groups_core_init_wasm(): void;
 export function __wbg_student_free(a: number): void;
 export function student_new(a: number, b: number, c: number, d: number, e: number, f: number): number;
 export function student_from_encoded(a: number, b: number): number;
