@@ -5,6 +5,7 @@ use time_tz::{timezones, Offset, TimeZone};
 use wasm_bindgen::prelude::*;
 
 mod hillclimbing_strategy;
+mod min_max_strategy;
 
 /// A group of students, along with suggested meet times.
 #[derive(Debug, PartialEq)]
