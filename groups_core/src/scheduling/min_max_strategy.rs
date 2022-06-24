@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::scheduling::Group;
 use crate::student::Student;
 
