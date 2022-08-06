@@ -84,7 +84,7 @@ impl Student {
         if offset > 0 {
             slice.rotate_left(offset as usize)
         } else {
-            slice.rotate_right(offset.abs() as usize)
+            slice.rotate_right(offset.unsigned_abs() as usize)
         };
 
         AvailabilityIter {
