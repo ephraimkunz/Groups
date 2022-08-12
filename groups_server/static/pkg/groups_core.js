@@ -1,9 +1,13 @@
 
 let wasm;
 
-const cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+const heap = new Array(32).fill(undefined);
 
-cachedTextDecoder.decode();
+heap.push(undefined, null, true, false);
+
+function getObject(idx) { return heap[idx]; }
+
+let WASM_VECTOR_LEN = 0;
 
 let cachedUint8Memory0 = new Uint8Array();
 
@@ -13,29 +17,6 @@ function getUint8Memory0() {
     }
     return cachedUint8Memory0;
 }
-
-function getStringFromWasm0(ptr, len) {
-    return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
-}
-
-const heap = new Array(32).fill(undefined);
-
-heap.push(undefined, null, true, false);
-
-let heap_next = heap.length;
-
-function addHeapObject(obj) {
-    if (heap_next === heap.length) heap.push(heap.length + 1);
-    const idx = heap_next;
-    heap_next = heap[idx];
-
-    heap[idx] = obj;
-    return idx;
-}
-
-function getObject(idx) { return heap[idx]; }
-
-let WASM_VECTOR_LEN = 0;
 
 const cachedTextEncoder = new TextEncoder('utf-8');
 
@@ -99,6 +80,25 @@ function getInt32Memory0() {
     return cachedInt32Memory0;
 }
 
+const cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+
+cachedTextDecoder.decode();
+
+function getStringFromWasm0(ptr, len) {
+    return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
+}
+
+let heap_next = heap.length;
+
+function addHeapObject(obj) {
+    if (heap_next === heap.length) heap.push(heap.length + 1);
+    const idx = heap_next;
+    heap_next = heap[idx];
+
+    heap[idx] = obj;
+    return idx;
+}
+
 function dropObject(idx) {
     if (idx < 36) return;
     heap[idx] = heap_next;
@@ -109,22 +109,6 @@ function takeObject(idx) {
     const ret = getObject(idx);
     dropObject(idx);
     return ret;
-}
-/**
-* Like `timezones`, but returns a Javascript array of strings for use in WASM.
-* @returns {any}
-*/
-export function timezones_wasm() {
-    const ret = wasm.timezones_wasm();
-    return takeObject(ret);
-}
-
-/**
-* Initializes the library for use in WASM. This function should be called before any others in this library in a
-* WASM context. It only needs to be called once.
-*/
-export function groups_core_init_wasm() {
-    wasm.groups_core_init_wasm();
 }
 
 let stack_pointer = 32;
@@ -154,6 +138,23 @@ export function create_groups_wasm(students, group_size, output_timezone) {
     } finally {
         heap[stack_pointer++] = undefined;
     }
+}
+
+/**
+* Like `timezones`, but returns a Javascript array of strings for use in WASM.
+* @returns {any}
+*/
+export function timezones_wasm() {
+    const ret = wasm.timezones_wasm();
+    return takeObject(ret);
+}
+
+/**
+* Initializes the library for use in WASM. This function should be called before any others in this library in a
+* WASM context. It only needs to be called once.
+*/
+export function groups_core_init_wasm() {
+    wasm.groups_core_init_wasm();
 }
 
 function handleError(f, args) {
@@ -331,10 +332,6 @@ async function load(module, imports) {
 function getImports() {
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbindgen_json_parse = function(arg0, arg1) {
-        const ret = JSON.parse(getStringFromWasm0(arg0, arg1));
-        return addHeapObject(ret);
-    };
     imports.wbg.__wbindgen_json_serialize = function(arg0, arg1) {
         const obj = getObject(arg1);
         const ret = JSON.stringify(obj === undefined ? null : obj);
@@ -342,6 +339,10 @@ function getImports() {
         const len0 = WASM_VECTOR_LEN;
         getInt32Memory0()[arg0 / 4 + 1] = len0;
         getInt32Memory0()[arg0 / 4 + 0] = ptr0;
+    };
+    imports.wbg.__wbindgen_json_parse = function(arg0, arg1) {
+        const ret = JSON.parse(getStringFromWasm0(arg0, arg1));
+        return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
         takeObject(arg0);

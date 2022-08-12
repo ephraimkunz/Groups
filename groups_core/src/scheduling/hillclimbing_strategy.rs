@@ -10,6 +10,8 @@ use plotters::prelude::*;
 use rand::seq::SliceRandom;
 use rand::{thread_rng, Rng};
 
+use super::SchedulingStrategy;
+
 #[derive(Default)]
 struct Assignment {
     /// Calculated score indicating goodness of group. Higher is better.
@@ -189,42 +191,46 @@ impl Assignment {
     }
 }
 
-pub fn run(students: &[Student], group_size: usize) -> Vec<Group> {
-    if students.is_empty() || group_size == 0 {
-        return vec![];
+pub struct HillClimbingStrategy;
+
+impl SchedulingStrategy for HillClimbingStrategy {
+    fn run(students: &[Student], group_size: usize) -> Vec<Group> {
+        if students.is_empty() || group_size == 0 {
+            return vec![];
+        }
+
+        let students = Vec::from(students);
+
+        // When hillclimbing, we want multiple starting points to try to avoid getting stuck in a local minima.
+        const NUM_STARTING_POINTS: usize = 100;
+        let mut assignments = Vec::with_capacity(NUM_STARTING_POINTS);
+        for _ in 0..NUM_STARTING_POINTS {
+            assignments.push(Assignment::new(students.len(), group_size))
+        }
+
+        #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+        {
+            use rayon::prelude::*;
+            assignments.par_iter_mut().for_each(|assignment| {
+                assignment.find_best_grouping(&students);
+            });
+        }
+
+        // Rayon isn't well supported on WASM so do it sequentially there.
+        #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+        {
+            assignments.iter_mut().for_each(|assignment| {
+                assignment.find_best_grouping(&students);
+            });
+        }
+
+        // Plotting
+        #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+        plot_convergence(&assignments);
+
+        let best_assignment = assignments.iter().max_by_key(|s| s.score).unwrap();
+        best_assignment.groups(&students)
     }
-
-    let students = Vec::from(students);
-
-    // When hillclimbing, we want multiple starting points to try to avoid getting stuck in a local minima.
-    const NUM_STARTING_POINTS: usize = 100;
-    let mut assignments = Vec::with_capacity(NUM_STARTING_POINTS);
-    for _ in 0..NUM_STARTING_POINTS {
-        assignments.push(Assignment::new(students.len(), group_size))
-    }
-
-    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-    {
-        use rayon::prelude::*;
-        assignments.par_iter_mut().for_each(|assignment| {
-            assignment.find_best_grouping(&students);
-        });
-    }
-
-    // Rayon isn't well supported on WASM so do it sequentially there.
-    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-    {
-        assignments.iter_mut().for_each(|assignment| {
-            assignment.find_best_grouping(&students);
-        });
-    }
-
-    // Plotting
-    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-    plot_convergence(&assignments);
-
-    let best_assignment = assignments.iter().max_by_key(|s| s.score).unwrap();
-    best_assignment.groups(&students)
 }
 
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
@@ -307,7 +313,7 @@ mod tests {
         .map(|s| Student::from_encoded(s).unwrap())
         .collect();
 
-        let best_grouping = run(&students, 2);
+        let best_grouping = HillClimbingStrategy::run(&students, 2);
         assert_eq!(best_grouping.len(), 4); // 4 groups of 2.
         assert_eq!(
             best_grouping,
@@ -347,7 +353,7 @@ mod tests {
     #[test]
     fn test_large_random() {
         let (students, seed) = random_students(50, None);
-        let best_grouping = run(&students, 5);
+        let best_grouping = HillClimbingStrategy::run(&students, 5);
 
         let times = best_grouping
             .iter()

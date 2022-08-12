@@ -6,117 +6,129 @@ use rand::thread_rng;
 use crate::scheduling::Group;
 use crate::student::Student;
 
-/// Based on the methodology described in https://www.researchgate.net/publication/258239070_Design_and_validation_of_a_web-based_system_for_assigning_members_to_teams_using_instructor-specified_criteria
-// Algo:
-// 1. Randomly assign students to teams of size n.
-// 2. Calculate question and complicance scores.
-// 3. Iteratively change team assignments to maximize the minimum compliance score of the set of teams.
-pub fn run(students: &[Student], group_size: usize) -> Vec<Group> {
-    const RANDOM_STARTS: usize = 50;
-    const TEAM_SWAP_MAX_PASSES: usize = 20;
+use super::SchedulingStrategy;
 
-    let num_teams = Integer::div_ceil(&students.len(), &group_size);
+pub struct MinMaxStrategy;
 
-    // Start out with the given array. Hopefully we'll generate something better.
-    let mut best_assignment = (0..students.len()).collect_vec();
-    let mut best_assignment_min_score = best_assignment
-        .chunks(group_size)
-        .map(|t| team_sched_score(t, students))
-        .fold(f64::INFINITY, |a, b| a.min(b));
+impl SchedulingStrategy for MinMaxStrategy {
+    /// Based on the methodology described in https://www.researchgate.net/publication/258239070_Design_and_validation_of_a_web-based_system_for_assigning_members_to_teams_using_instructor-specified_criteria
+    // Algo:
+    // 1. Randomly assign students to teams of size n.
+    // 2. Calculate question and complicance scores.
+    // 3. Iteratively change team assignments to maximize the minimum compliance score of the set of teams.
+    fn run(students: &[Student], group_size: usize) -> Vec<Group> {
+        if students.is_empty() || group_size < 1 {
+            return vec![];
+        }
 
-    for _ in 0..RANDOM_STARTS {
-        let mut teams = (0..students.len()).collect_vec();
-        teams.shuffle(&mut thread_rng());
+        const RANDOM_STARTS: usize = 50;
+        const TEAM_SWAP_MAX_PASSES: usize = 20;
 
-        let mut min_score: f64 = 0.0;
+        let num_teams = Integer::div_ceil(&students.len(), &group_size);
 
-        for _ in 0..TEAM_SWAP_MAX_PASSES {
-            let mut swap_happened = false;
+        // Start out with the given array. Hopefully we'll generate something better.
+        let mut best_assignment = (0..students.len()).collect_vec();
+        let mut best_assignment_min_score = best_assignment
+            .chunks(group_size)
+            .map(|t| team_sched_score(t, students))
+            .fold(f64::INFINITY, |a, b| a.min(b));
 
-            for team_a_index in 0..(num_teams - 1) {
-                let team_a_start_index = team_a_index * group_size;
-                let team_a_size = if (team_a_start_index + group_size) <= students.len() {
-                    group_size
-                } else {
-                    students.len() - (team_a_start_index + group_size)
-                };
-                for team_b_index in (team_a_index + 1)..num_teams {
-                    let team_b_start_index = team_b_index * group_size;
-                    let team_b_size = if (team_b_start_index + group_size) <= students.len() {
+        for _ in 0..RANDOM_STARTS {
+            let mut teams = (0..students.len()).collect_vec();
+            teams.shuffle(&mut thread_rng());
+
+            let mut min_score: f64 = 0.0;
+
+            for _ in 0..TEAM_SWAP_MAX_PASSES {
+                let mut swap_happened = false;
+
+                for team_a_index in 0..(num_teams - 1) {
+                    let team_a_start_index = team_a_index * group_size;
+                    let team_a_size = if (team_a_start_index + group_size) <= students.len() {
                         group_size
                     } else {
-                        students.len() - (team_b_start_index + group_size)
+                        students.len() - (team_a_start_index + group_size)
                     };
-                    for student_a_index in team_a_start_index..(team_a_start_index + team_a_size) {
-                        for student_b_index in
-                            team_b_start_index..(team_b_start_index + team_b_size)
+                    for team_b_index in (team_a_index + 1)..num_teams {
+                        let team_b_start_index = team_b_index * group_size;
+                        let team_b_size = if (team_b_start_index + group_size) <= students.len() {
+                            group_size
+                        } else {
+                            students.len() - (team_b_start_index + group_size)
+                        };
+                        for student_a_index in
+                            team_a_start_index..(team_a_start_index + team_a_size)
                         {
-                            let old_team_a_score = team_sched_score(
-                                &teams[team_a_start_index..(team_a_start_index + team_a_size)],
-                                students,
-                            );
-                            let old_team_b_score = team_sched_score(
-                                &teams[team_b_start_index..(team_b_start_index + team_b_size)],
-                                students,
-                            );
-                            let old = old_team_a_score.min(old_team_b_score);
+                            for student_b_index in
+                                team_b_start_index..(team_b_start_index + team_b_size)
+                            {
+                                let old_team_a_score = team_sched_score(
+                                    &teams[team_a_start_index..(team_a_start_index + team_a_size)],
+                                    students,
+                                );
+                                let old_team_b_score = team_sched_score(
+                                    &teams[team_b_start_index..(team_b_start_index + team_b_size)],
+                                    students,
+                                );
+                                let old = old_team_a_score.min(old_team_b_score);
 
-                            teams.swap(student_a_index, student_b_index);
-
-                            let new_team_a_score = team_sched_score(
-                                &teams[team_a_start_index..(team_a_start_index + team_a_size)],
-                                students,
-                            );
-                            let new_team_b_score = team_sched_score(
-                                &teams[team_b_start_index..(team_b_start_index + team_b_size)],
-                                students,
-                            );
-                            let new = new_team_a_score.min(new_team_b_score);
-
-                            if new > old {
-                                swap_happened = true;
-                                min_score = min_score.max(new);
-                            } else {
-                                // If the new teams arrangement is no better than the old, revert swap by swapping again.
                                 teams.swap(student_a_index, student_b_index);
+
+                                let new_team_a_score = team_sched_score(
+                                    &teams[team_a_start_index..(team_a_start_index + team_a_size)],
+                                    students,
+                                );
+                                let new_team_b_score = team_sched_score(
+                                    &teams[team_b_start_index..(team_b_start_index + team_b_size)],
+                                    students,
+                                );
+                                let new = new_team_a_score.min(new_team_b_score);
+
+                                if new > old {
+                                    swap_happened = true;
+                                    min_score = min_score.max(new);
+                                } else {
+                                    // If the new teams arrangement is no better than the old, revert swap by swapping again.
+                                    teams.swap(student_a_index, student_b_index);
+                                }
                             }
                         }
                     }
                 }
+
+                if !swap_happened {
+                    break;
+                }
             }
 
-            if !swap_happened {
-                break;
+            if min_score > best_assignment_min_score {
+                best_assignment_min_score = min_score;
+                best_assignment = teams;
             }
         }
 
-        if min_score > best_assignment_min_score {
-            best_assignment_min_score = min_score;
-            best_assignment = teams;
+        // Convert best_assignment to Vec<Group>.
+        let mut result = Vec::with_capacity(num_teams);
+        for team in best_assignment.chunks(group_size) {
+            let mut student_ids = team.iter().map(|&i| students[i].encode()).collect_vec();
+            student_ids.sort_unstable(); // To make unit testing easier.
+
+            let meet_times = team
+                .iter()
+                .map(|&i| students[i].availability_array_in_utc())
+                .reduce(|accum, item| accum & item)
+                .unwrap();
+            let suggested_meet_times = meet_times.iter_ones().collect();
+            result.push(Group {
+                students: student_ids,
+                suggested_meet_times,
+            });
         }
+
+        result.sort_unstable_by_key(|g| g.students[0].to_string()); // To make unit testing easier.
+
+        result
     }
-
-    // Convert best_assignment to Vec<Group>.
-    let mut result = Vec::with_capacity(num_teams);
-    for team in best_assignment.chunks(group_size) {
-        let mut student_ids = team.iter().map(|&i| students[i].encode()).collect_vec();
-        student_ids.sort_unstable(); // To make unit testing easier.
-
-        let meet_times = team
-            .iter()
-            .map(|&i| students[i].availability_array_in_utc())
-            .reduce(|accum, item| accum & item)
-            .unwrap();
-        let suggested_meet_times = meet_times.iter_ones().collect();
-        result.push(Group {
-            students: student_ids,
-            suggested_meet_times,
-        });
-    }
-
-    result.sort_unstable_by_key(|g| g.students[0].to_string()); // To make unit testing easier.
-
-    result
 }
 
 /// Equation (3) from paper (page 9).
@@ -259,7 +271,7 @@ mod tests {
         .map(|s| Student::from_encoded(s).unwrap())
         .collect();
 
-        let best_grouping = run(&students, 2);
+        let best_grouping = MinMaxStrategy::run(&students, 2);
         assert_eq!(best_grouping.len(), 4); // 4 groups of 2.
         assert_eq!(
             best_grouping,
@@ -299,7 +311,7 @@ mod tests {
     #[test]
     fn test_large_random() {
         let (students, seed) = random_students(50, None);
-        let best_grouping = run(&students, 5);
+        let best_grouping = MinMaxStrategy::run(&students, 5);
 
         let times = best_grouping
             .iter()

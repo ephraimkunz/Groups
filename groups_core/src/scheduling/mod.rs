@@ -4,11 +4,20 @@ use serde::{Deserialize, Serialize};
 use time_tz::{timezones, Offset, TimeZone};
 use wasm_bindgen::prelude::*;
 
+use self::min_max_strategy::MinMaxStrategy;
+
 mod hillclimbing_strategy;
 mod min_max_strategy;
 
+type DefaultStrategy = MinMaxStrategy;
+
+/// A trait representing a specific scheduler for groups.
+pub trait SchedulingStrategy {
+    fn run(students: &[Student], group_size: usize) -> Vec<Group>;
+}
+
 /// A group of students, along with suggested meet times.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Group {
     /// Vector of encoded Student.
     pub students: Vec<String>,
@@ -36,19 +45,28 @@ pub fn create_groups_wasm(
     output_timezone: String,
 ) -> JsValue {
     let student_strings: Vec<String> = students.into_serde().unwrap();
-    let groups = create_groups(&student_strings, group_size);
+
+    //  For WASM, the default strategy is the MinMax strategy.
+    let groups = create_groups_default_strategy(&student_strings, group_size);
     let display = display_groups(&groups, &output_timezone);
     JsValue::from_serde(&display).unwrap()
 }
 
 /// Returns the best grouping of students, given the total students in the class and
 /// the maximum size of a group.
-pub fn create_groups(students_encoded: &[String], group_size: usize) -> Vec<Group> {
+pub fn create_groups<S: SchedulingStrategy>(
+    students_encoded: &[String],
+    group_size: usize,
+) -> Vec<Group> {
     let students: Vec<Student> = students_encoded
         .iter()
         .filter_map(|s| Student::from_encoded(s))
         .collect();
-    hillclimbing_strategy::run(&students, group_size)
+    S::run(&students, group_size)
+}
+
+fn create_groups_default_strategy(students_encoded: &[String], group_size: usize) -> Vec<Group> {
+    create_groups::<DefaultStrategy>(students_encoded, group_size)
 }
 
 fn display_groups(groups: &[Group], timezone: &str) -> Vec<DisplayGroup> {
@@ -101,9 +119,10 @@ fn pretty_hours(hours_in_utc: &[usize], output_timezone: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn groups_no_students() {
-        assert_eq!(0, create_groups(&[], 3).len())
+        assert_eq!(0, create_groups_default_strategy(&[], 3).len())
     }
 
     #[test]
@@ -111,14 +130,14 @@ mod tests {
         let students = [String::from(
             "ZGZzZGZzfEFmcmljYS9BbGdpZXJzfDE5MjB8MjE0NzQ4Mzc2OHw3fDB8MHww=",
         )];
-        assert_eq!(0, create_groups(&students, 0).len())
+        assert_eq!(0, create_groups_default_strategy(&students, 0).len())
     }
 
     #[test]
     fn groups_single_student() {
         assert_eq!(
             1,
-            create_groups(
+            create_groups_default_strategy(
                 &[String::from(
                     "ZGZzZGZzfEFmcmljYS9BbGdpZXJzfDE5MjB8MjE0NzQ4Mzc2OHw3fDB8MHww"
                 )],
