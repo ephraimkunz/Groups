@@ -18,6 +18,7 @@ init()
 
         // Populate timezone dropdown
         populateTimezoneDropdown()
+        selectLocalTimeZone()
 
         // Submit button handling
         let submit_button = document.getElementById("submit-button")
@@ -38,7 +39,15 @@ function populateTimezoneDropdown() {
         $('#inputTimezone').append('<option>' + element + '</option>');
     })
     $('#inputTimezone').selectpicker('refresh')
-    $('#inputTimezone').selectpicker('val', DEFAULT_TIMEZONE)
+}
+
+function selectLocalTimeZone() {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) {
+        $('#inputTimezone').selectpicker('val', tz);
+    } else {
+        $('#inputTimezone').selectpicker('val', DEFAULT_TIMEZONE)
+    }
 }
 
 function setupTableHeaders() {

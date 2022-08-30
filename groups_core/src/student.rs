@@ -1,6 +1,6 @@
 use crate::constants::NUM_HOURS_PER_WEEK;
-use crate::now;
 use bitvec::prelude::*;
+use time::OffsetDateTime;
 use time_tz::{timezones, Offset, TimeZone, Tz};
 use wasm_bindgen::prelude::*;
 
@@ -112,7 +112,7 @@ impl Student {
         let old_tz = self.timezone;
         let new_tz = timezone;
 
-        let now = now();
+        let now = OffsetDateTime::now_utc();
 
         // We're going to assume here that all the timezones we care about have hour granularity offsets,
         // which isn't true for all timezones but simplifies things a lot.

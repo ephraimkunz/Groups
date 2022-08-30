@@ -1,6 +1,7 @@
 use crate::constants::NUM_HOURS_PER_WEEK;
 use crate::student::Student;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use time_tz::{timezones, Offset, TimeZone};
 use wasm_bindgen::prelude::*;
 
@@ -81,7 +82,7 @@ fn display_groups(groups: &[Group], timezone: &str) -> Vec<DisplayGroup> {
 
 fn pretty_hours(hours_in_utc: &[usize], output_timezone: &str) -> Vec<String> {
     let tz = timezones::get_by_name(output_timezone).unwrap();
-    let now = crate::now();
+    let now = OffsetDateTime::now_utc();
     let offset = tz.get_offset_utc(&now);
     let rotate = offset.to_utc().whole_hours() as i16;
 

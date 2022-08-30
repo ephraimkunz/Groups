@@ -6,6 +6,8 @@ init()
         // Populate timezone dropdown
         populateTimezoneField()
 
+        selectLocalTimeZone()
+
         // Submit button click handler
         let submit_button = document.getElementById("submit-button")
         submit_button.onclick = generateScheduleCode
@@ -43,6 +45,13 @@ function populateTimezoneField() {
         $('#inputTimezone').append('<option>' + element + '</option>')
     })
     $('#inputTimezone').selectpicker('refresh')
+}
+
+function selectLocalTimeZone() {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) {
+        $('#inputTimezone').selectpicker('val', tz);
+    }
 }
 
 async function copyScheduleCode(event) {
