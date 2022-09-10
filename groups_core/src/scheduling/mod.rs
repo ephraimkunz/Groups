@@ -177,4 +177,18 @@ mod tests {
         ];
         assert_eq!(result, expected);
     }
+
+    #[test]
+    fn no_crash_if_unfull_team() {
+        let students: Vec<String> = ["TG91aXMgQ2hpbHVtYmF8QWZyaWNhL0pvaGFubmVzYnVyZ3wwfDB8MjAxMzI2NjA0MHwwfDB8MA==",
+        "SXbDoW4gTWF4aW1pbGlhbm8gTW9udGUgfEFtZXJpY2EvQnVlbm9zX0FpcmVzfDc4NjQzMjB8MzA3MjB8MjAxMzI2NjA0MHwyMTU1MzQ3OTY4fDd8MA==",
+        "VmxhZGlzbG92YXMgS2FyYWxpdXN8RXVyb3BlL1ZpbG5pdXN8Nzg2NDMyMHwzMDcyMHwyMDEzMjY2MDQwfDc4NjQzMjB8MzI3NjB8MA==",
+        "QW1hbmRhIENvbGV8QW1lcmljYS9EZW52ZXJ8MHwxMjU4NTk4NDB8MjAxMzc1NzU2MHwwfDB8MA==",
+        "THkgRGFuZ3xBbWVyaWNhL0RlbnZlcnw0OTE1MjB8MjE0NzQ4NTU2OHw3fDB8MHww",
+        "VmlvbGEgRm9uZ3xBbWVyaWNhL0xvc19BbmdlbGVzfDIxNDgwMDU4ODh8MjI3MzMxNDY5NXwxMjd8ODM4ODQ4MHwwfDA=",
+        "RW1tYW51ZWwgREsgRG9sb3xBZnJpY2EvQWNjcmF8Nzg2NDMyMHwzMDcyMHwyMDEzMjY2MDQwfDc4NjQzMjB8MzA3MjB8MA=="].into_iter().map(String::from).collect();
+
+        let groups = create_groups_default_strategy(&students, 5);
+        assert_eq!(2, groups.len())
+    }
 }

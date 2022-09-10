@@ -42,6 +42,7 @@ impl SchedulingStrategy for MinMaxStrategy {
             for _ in 0..TEAM_SWAP_MAX_PASSES {
                 let mut swap_happened = false;
 
+                // Unfortunately a bit of index math here because doing the swap upsets the borrow-checker otherwise.
                 for team_a_index in 0..(num_teams - 1) {
                     let team_a_start_index = team_a_index * group_size;
                     let team_a_size = if (team_a_start_index + group_size) <= students.len() {
@@ -54,7 +55,7 @@ impl SchedulingStrategy for MinMaxStrategy {
                         let team_b_size = if (team_b_start_index + group_size) <= students.len() {
                             group_size
                         } else {
-                            students.len() - (team_b_start_index + group_size)
+                            students.len() - team_b_start_index
                         };
                         for student_a_index in
                             team_a_start_index..(team_a_start_index + team_a_size)
