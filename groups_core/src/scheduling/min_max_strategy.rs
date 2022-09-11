@@ -3,7 +3,9 @@ use num::Integer;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
-use crate::scheduling::Group;
+use crate::scheduling::{
+    hours_with_n_or_more_available_students, num_students_available_at_hour, Group,
+};
 use crate::student::Student;
 
 use super::SchedulingStrategy;
@@ -119,7 +121,25 @@ impl SchedulingStrategy for MinMaxStrategy {
                 .map(|&i| students[i].availability_array_in_utc())
                 .reduce(|accum, item| accum & item)
                 .unwrap();
-            let suggested_meet_times = meet_times.iter_ones().collect();
+            let suggested_meet_times = if meet_times.count_ones() > 0 {
+                // All group members are available at these times.
+                meet_times.iter_ones().collect_vec()
+            } else {
+                // All group members are never available at the same time. Find the maximum number of group
+                // members that are available at all times, and note all the hours that this many group members
+                // are available.
+                let num_students_avail_at_hour = num_students_available_at_hour(team, students);
+                let max_num_students_simultaneously_available =
+                    *num_students_avail_at_hour.iter().max().unwrap();
+
+                let hours_with_this_many_students = hours_with_n_or_more_available_students(
+                    max_num_students_simultaneously_available,
+                    num_students_avail_at_hour,
+                );
+
+                hours_with_this_many_students
+            };
+
             result.push(Group {
                 students: student_ids,
                 suggested_meet_times,

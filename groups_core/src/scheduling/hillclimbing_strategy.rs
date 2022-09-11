@@ -1,16 +1,18 @@
-use crate::student::Student;
 /// This strategy randomly assigns a number of starting assignments, then uses hill climbing to find local maxima of
 /// each starting assignment by swapping students between groups in that assignment. The assignment
 /// with the highest score is chosen. Scoring is based on the number of consecutive overlapping hours shared
 /// by students in a group.
-use crate::{constants::NUM_HOURS_PER_WEEK, scheduling::Group};
+use crate::scheduling::Group;
+use crate::student::Student;
 use itertools::Itertools;
 use num::Integer;
 use plotters::prelude::*;
 use rand::seq::SliceRandom;
 use rand::{thread_rng, Rng};
 
-use super::SchedulingStrategy;
+use super::{
+    hours_with_n_or_more_available_students, num_students_available_at_hour, SchedulingStrategy,
+};
 
 #[derive(Default)]
 struct Assignment {
@@ -47,19 +49,7 @@ impl Assignment {
         let mut meet_hours = Vec::with_capacity(Integer::div_ceil(&groups.len(), &group_size));
 
         for group in groups.chunks(group_size) {
-            let availabilities: Vec<_> = group
-                .iter()
-                .map(|&i| students[i].availability_array_in_utc())
-                .collect();
-
-            let mut num_students_avail_at_hour = vec![0; NUM_HOURS_PER_WEEK];
-            for (i, num_avail_at_hour_slot) in num_students_avail_at_hour.iter_mut().enumerate() {
-                let mut count = 0;
-                for a in &availabilities {
-                    count += if *a.get(i).unwrap() { 1 } else { 0 };
-                }
-                *num_avail_at_hour_slot = count;
-            }
+            let num_students_avail_at_hour = num_students_available_at_hour(group, students);
 
             // The group score is either max number of students that can meet at one time if not all can meet at the same
             // time, or if they can meet at the same time the num of consecutive hours they are all availalble * num students.
@@ -67,22 +57,15 @@ impl Assignment {
 
             let max_num_students_simultaneously_available =
                 *num_students_avail_at_hour.iter().max().unwrap();
-            if max_num_students_simultaneously_available < group.len() as u8 {
+            if max_num_students_simultaneously_available < group.len() as u32 {
                 // No time slot includes all students. Find all the ones that include the max number of students and use
                 // those as the suggested times.
 
                 score += max_num_students_simultaneously_available as usize;
-                let hours_with_this_many_students: Vec<_> = num_students_avail_at_hour
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(hour, &student_count)| {
-                        if student_count == max_num_students_simultaneously_available {
-                            Some(hour)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
+                let hours_with_this_many_students = hours_with_n_or_more_available_students(
+                    max_num_students_simultaneously_available,
+                    num_students_avail_at_hour,
+                );
 
                 meet_hours.push(hours_with_this_many_students);
             } else {

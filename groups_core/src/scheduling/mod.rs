@@ -23,12 +23,13 @@ pub struct Group {
     /// Vector of encoded Student.
     pub students: Vec<String>,
 
-    /// Vector of hours in the week when students are all available (in UTC).
+    /// Vector of hours in the week when the most number of students in the group are all available (in UTC).
+    /// Not guaranteed that all students in this group are available at these times.
     /// 0 = Monday at 12 AM, 1 = Monday at 1 AM, etc.
     pub suggested_meet_times: Vec<usize>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct DisplayGroup {
     students: Vec<String>,
     suggested_meet_times: Vec<String>,
@@ -80,6 +81,47 @@ fn display_groups(groups: &[Group], timezone: &str) -> Vec<DisplayGroup> {
         .collect()
 }
 
+/// Returns a count for each hour in UTC in a week, where the count is the number of students available at that hour.
+fn num_students_available_at_hour(
+    group: &[usize],
+    students: &[Student],
+) -> [u32; NUM_HOURS_PER_WEEK] {
+    let availabilities: Vec<_> = group
+        .iter()
+        .map(|&i| students[i].availability_array_in_utc())
+        .collect();
+
+    let mut result = [0; NUM_HOURS_PER_WEEK];
+    for (i, num_avail_at_hour_slot) in result.iter_mut().enumerate() {
+        let mut count = 0;
+        for a in &availabilities {
+            count += if *a.get(i).unwrap() { 1 } else { 0 };
+        }
+        *num_avail_at_hour_slot = count;
+    }
+
+    result
+}
+
+fn hours_with_n_or_more_available_students(
+    n: u32,
+    availabilities: [u32; NUM_HOURS_PER_WEEK],
+) -> Vec<usize> {
+    availabilities
+        .iter()
+        .enumerate()
+        .filter_map(
+            |(hour, &student_count)| {
+                if student_count >= n {
+                    Some(hour)
+                } else {
+                    None
+                }
+            },
+        )
+        .collect()
+}
+
 fn pretty_hours(hours_in_utc: &[usize], output_timezone: &str) -> Vec<String> {
     let tz = timezones::get_by_name(output_timezone).unwrap();
     let now = OffsetDateTime::now_utc();
@@ -108,7 +150,13 @@ fn pretty_hours(hours_in_utc: &[usize], output_timezone: &str) -> Vec<String> {
         };
 
         let day_names = [
-            "Monday", "Tuesday", "Wedesday", "Thursday", "Friday", "Saturday", "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
         ];
         let day_display = day_names[day];
         result.push(format!("{day_display} at {hour_display}"))
@@ -186,9 +234,11 @@ mod tests {
         "QW1hbmRhIENvbGV8QW1lcmljYS9EZW52ZXJ8MHwxMjU4NTk4NDB8MjAxMzc1NzU2MHwwfDB8MA==",
         "THkgRGFuZ3xBbWVyaWNhL0RlbnZlcnw0OTE1MjB8MjE0NzQ4NTU2OHw3fDB8MHww",
         "VmlvbGEgRm9uZ3xBbWVyaWNhL0xvc19BbmdlbGVzfDIxNDgwMDU4ODh8MjI3MzMxNDY5NXwxMjd8ODM4ODQ4MHwwfDA=",
-        "RW1tYW51ZWwgREsgRG9sb3xBZnJpY2EvQWNjcmF8Nzg2NDMyMHwzMDcyMHwyMDEzMjY2MDQwfDc4NjQzMjB8MzA3MjB8MA=="].into_iter().map(String::from).collect();
+        "RW1tYW51ZWwgREsgRG9sb3xBZnJpY2EvQWNjcmF8Nzg2NDMyMHwzMDcyMHwyMDEzMjY2MDQwfDc4NjQzMjB8MzA3MjB8MA==", 
+        "TW9uaXF1ZSBSb2JlcnRzfEFtZXJpY2EvRGVudmVyfDc4NjQzMjB8MzA3MjB8MTI1ODI5MTIwfDB8MHww",
+       "U3RldmVuIEZvc3RlcnxBbWVyaWNhL0RlbnZlcnwwfDMwNzIwfDIwMTMyNjYwNDB8MHwwfDA="].into_iter().map(String::from).collect();
 
-        let groups = create_groups_default_strategy(&students, 5);
+        let groups = create_groups::<MinMaxStrategy>(&students, 5);
         assert_eq!(2, groups.len())
     }
 }
