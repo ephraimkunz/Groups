@@ -5,12 +5,12 @@ use time::OffsetDateTime;
 use time_tz::{timezones, Offset, TimeZone};
 use wasm_bindgen::prelude::*;
 
-use self::min_max_strategy::MinMaxStrategy;
+use self::hillclimbing_strategy::HillClimbingStrategy;
 
 mod hillclimbing_strategy;
 mod min_max_strategy;
 
-type DefaultStrategy = MinMaxStrategy;
+type DefaultStrategy = HillClimbingStrategy;
 
 /// A trait representing a specific scheduler for groups.
 pub trait SchedulingStrategy {
@@ -58,16 +58,16 @@ struct DisplayGroup {
 /// each output group.
 /// Returns a Javascript array of JSON objects representing groups.
 pub fn create_groups_wasm(
-    students: &JsValue,
+    students: JsValue,
     group_size: usize,
     output_timezone: String,
 ) -> JsValue {
-    let student_strings: Vec<String> = students.into_serde().unwrap();
+    let student_strings: Vec<String> = serde_wasm_bindgen::from_value(students).unwrap();
 
     //  For WASM, the default strategy is the MinMax strategy.
     let groups = create_groups_default_strategy(&student_strings, group_size);
     let display = display_groups(&groups, &output_timezone);
-    JsValue::from_serde(&display).unwrap()
+    serde_wasm_bindgen::to_value(&display).unwrap()
 }
 
 /// Returns the best grouping of students, given the total students in the class and
@@ -184,7 +184,7 @@ fn pretty_hours(hours_in_utc: &[usize], output_timezone: &str) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{min_max_strategy::MinMaxStrategy, *};
 
     #[test]
     fn groups_no_students() {

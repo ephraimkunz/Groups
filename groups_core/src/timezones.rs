@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn timezones_wasm() -> JsValue {
     let names = timezones();
-    JsValue::from_serde(&names).unwrap()
+    serde_wasm_bindgen::to_value(&names).unwrap()
 }
 
 /// Get a list of all supported timezone names.
