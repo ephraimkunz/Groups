@@ -39,8 +39,6 @@ impl SchedulingStrategy for MinMaxStrategy {
             let mut teams = (0..students.len()).collect_vec();
             teams.shuffle(&mut thread_rng());
 
-            let mut min_score: f64 = 0.0;
-
             for _ in 0..TEAM_SWAP_MAX_PASSES {
                 let mut swap_happened = false;
 
@@ -89,7 +87,6 @@ impl SchedulingStrategy for MinMaxStrategy {
 
                                 if new > old {
                                     swap_happened = true;
-                                    min_score = min_score.max(new);
                                 } else {
                                     // If the new teams arrangement is no better than the old, revert swap by swapping again.
                                     teams.swap(student_a_index, student_b_index);
@@ -103,6 +100,11 @@ impl SchedulingStrategy for MinMaxStrategy {
                     break;
                 }
             }
+
+            let min_score: f64 = teams
+                .chunks(group_size)
+                .map(|t| team_sched_score(t, students))
+                .fold(f64::INFINITY, |a, b| a.min(b));
 
             if min_score > best_assignment_min_score {
                 best_assignment_min_score = min_score;
