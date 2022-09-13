@@ -29,10 +29,26 @@ pub struct Group {
     pub suggested_meet_times: Vec<usize>,
 }
 
+impl Group {
+    fn percent_at_suggested_times(&self) -> f64 {
+        let students: Vec<Student> = self
+            .students
+            .iter()
+            .filter_map(|s| Student::from_encoded(s))
+            .collect();
+
+        let group: Vec<usize> = (0..self.students.len()).collect();
+
+        let avail = num_students_available_at_hour(&group, &students);
+        avail[self.suggested_meet_times[0]] as f64 / self.students.len() as f64
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 struct DisplayGroup {
     students: Vec<String>,
     suggested_meet_times: Vec<String>,
+    percent_at_suggested_times: f64,
 }
 
 #[wasm_bindgen]
@@ -77,6 +93,7 @@ fn display_groups(groups: &[Group], timezone: &str) -> Vec<DisplayGroup> {
         .map(|g| DisplayGroup {
             students: g.students.clone(),
             suggested_meet_times: pretty_hours(&g.suggested_meet_times, timezone),
+            percent_at_suggested_times: g.percent_at_suggested_times(),
         })
         .collect()
 }
