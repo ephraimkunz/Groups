@@ -154,6 +154,7 @@ function generateGroups() {
 
                 cell = row.insertCell()
                 let suggested_meet_times = ""
+                suggested_meet_times += "<b>" + Math.round(group.percent_at_suggested_times * group.students.length) + "/" + group.students.length + " students can meet at these times</b><br>"
                 for (var string of group.suggested_meet_times) {
                     suggested_meet_times += string + " (" + output_timezone + ")<br>"
                 };
