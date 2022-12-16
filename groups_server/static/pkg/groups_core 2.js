@@ -189,15 +189,6 @@ function debugString(val) {
     return className;
 }
 /**
-* Like `timezones`, but returns a Javascript array of strings for use in WASM.
-* @returns {any}
-*/
-export function timezones_wasm() {
-    const ret = wasm.timezones_wasm();
-    return takeObject(ret);
-}
-
-/**
 * Initializes the library for use in WASM. This function should be called before any others in this library in a
 * WASM context. It only needs to be called once.
 */
@@ -220,6 +211,15 @@ export function create_groups_wasm(students, group_size, output_timezone) {
     const ptr0 = passStringToWasm0(output_timezone, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ret = wasm.create_groups_wasm(addHeapObject(students), group_size, ptr0, len0);
+    return takeObject(ret);
+}
+
+/**
+* Like `timezones`, but returns a Javascript array of strings for use in WASM.
+* @returns {any}
+*/
+export function timezones_wasm() {
+    const ret = wasm.timezones_wasm();
     return takeObject(ret);
 }
 

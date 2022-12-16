@@ -112,7 +112,7 @@ fn num_students_available_at_hour(
     for (i, num_avail_at_hour_slot) in result.iter_mut().enumerate() {
         let mut count = 0;
         for a in &availabilities {
-            count += if *a.get(i).unwrap() { 1 } else { 0 };
+            count += u32::from(*a.get(i).unwrap());
         }
         *num_avail_at_hour_slot = count;
     }

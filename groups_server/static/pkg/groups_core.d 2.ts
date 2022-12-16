@@ -1,11 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
-* Like `timezones`, but returns a Javascript array of strings for use in WASM.
-* @returns {any}
-*/
-export function timezones_wasm(): any;
-/**
 * Initializes the library for use in WASM. This function should be called before any others in this library in a
 * WASM context. It only needs to be called once.
 */
@@ -22,6 +17,11 @@ export function groups_core_init_wasm(): void;
 * @returns {any}
 */
 export function create_groups_wasm(students: any, group_size: number, output_timezone: string): any;
+/**
+* Like `timezones`, but returns a Javascript array of strings for use in WASM.
+* @returns {any}
+*/
+export function timezones_wasm(): any;
 /**
 * Represents a student and their availability to meet with a group.
 */
@@ -74,7 +74,6 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly timezones_wasm: () => number;
   readonly groups_core_init_wasm: () => void;
   readonly create_groups_wasm: (a: number, b: number, c: number, d: number) => number;
   readonly __wbg_student_free: (a: number) => void;
@@ -84,6 +83,7 @@ export interface InitOutput {
   readonly student_availability_in_timezone: (a: number, b: number, c: number, d: number) => void;
   readonly student_name: (a: number, b: number) => void;
   readonly student_timezone: (a: number, b: number) => void;
+  readonly timezones_wasm: () => number;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
