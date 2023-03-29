@@ -12,5 +12,7 @@
   ],
   "module": "groups_core.js",
   "types": "groups_core.d.ts",
-  "sideEffects": false
+  "sideEffects": [
+    "./snippets/*"
+  ]
 }

@@ -38,7 +38,6 @@ pub fn random_students(count: usize, seed: Option<u64>) -> (Vec<Student>, u64) {
 
     (
         (0..count)
-            .into_iter()
             .map(|_| {
                 use fake::faker::name::en::Name;
                 let name: String = Name().fake();

@@ -12,7 +12,5 @@ async fn random() -> String {
 
 #[launch]
 async fn rocket() -> _ {
-    groups_server::build_rocket()
-        .await
-        .mount("/", routes![random])
+    rocket::build().mount("/", routes![random])
 }

@@ -33,8 +33,8 @@ pub async fn build_rocket() -> Rocket<Build> {
         .mount("/static", FileServer::from(relative!("static")))
 }
 
-#[shuttle_service::main]
-async fn init() -> Result<Rocket<Build>, shuttle_service::Error> {
+#[shuttle_runtime::main]
+async fn init() -> shuttle_rocket::ShuttleRocket {
     let rocket = build_rocket().await;
-    Ok(rocket)
+    Ok(rocket.into())
 }
