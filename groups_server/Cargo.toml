@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 shuttle-rocket = "0.13"
 shuttle-runtime = "0.13"
-rocket = { version = "0.5.0-rc.2" }
+rocket = { version = "0.5.0-rc.3" }
 tokio = "1"

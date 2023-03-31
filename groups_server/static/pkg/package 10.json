@@ -1,0 +1,18 @@
+{
+  "name": "groups_core",
+  "collaborators": [
+    "Ephraim Kunz <ephraimkunz@me.com>"
+  ],
+  "description": "Core library for encoding / decoding student availability info and choosing groups",
+  "version": "0.1.0",
+  "files": [
+    "groups_core_bg.wasm",
+    "groups_core.js",
+    "groups_core.d.ts"
+  ],
+  "module": "groups_core.js",
+  "types": "groups_core.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
