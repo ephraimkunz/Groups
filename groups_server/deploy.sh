@@ -1,1 +1,2 @@
-cargo shuttle deploy --allow-dirty
+cargo shuttle deploy --allow-dirty --name groups-server
+
