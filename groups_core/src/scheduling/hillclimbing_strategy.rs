@@ -6,7 +6,6 @@ use crate::scheduling::Group;
 use crate::student::Student;
 use itertools::Itertools;
 use num::Integer;
-use plotters::prelude::*;
 use rand::seq::SliceRandom;
 use rand::{thread_rng, Rng};
 
@@ -207,71 +206,71 @@ impl SchedulingStrategy for HillClimbingStrategy {
             });
         }
 
-        // Plotting
-        #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-        plot_convergence(&assignments);
+        // // Plotting
+        // #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+        // plot_convergence(&assignments);
 
         let best_assignment = assignments.iter().max_by_key(|s| s.score).unwrap();
         best_assignment.groups(&students)
     }
 }
 
-#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-fn plot_convergence(assignments: &[Assignment]) {
-    const NUM_LINES_TO_PLOT: usize = 10;
+// #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+// fn plot_convergence(assignments: &[Assignment]) {
+//     const NUM_LINES_TO_PLOT: usize = 10;
 
-    let max_iterations = assignments
-        .iter()
-        .take(NUM_LINES_TO_PLOT)
-        .max_by_key(|i| i.score_history.len())
-        .unwrap()
-        .score_history
-        .len();
+//     let max_iterations = assignments
+//         .iter()
+//         .take(NUM_LINES_TO_PLOT)
+//         .max_by_key(|i| i.score_history.len())
+//         .unwrap()
+//         .score_history
+//         .len();
 
-    let max_score = assignments
-        .iter()
-        .take(NUM_LINES_TO_PLOT)
-        .max_by_key(|s| s.score)
-        .unwrap()
-        .score;
+//     let max_score = assignments
+//         .iter()
+//         .take(NUM_LINES_TO_PLOT)
+//         .max_by_key(|s| s.score)
+//         .unwrap()
+//         .score;
 
-    let root = BitMapBackend::new("out.png", (1024, 768)).into_drawing_area();
-    root.fill(&WHITE).unwrap();
+//     let root = BitMapBackend::new("out.png", (1024, 768)).into_drawing_area();
+//     root.fill(&WHITE).unwrap();
 
-    let mut chart = ChartBuilder::on(&root)
-        .caption(
-            "Group assignment hill-climbing convergence",
-            ("sans-serif", (5).percent_height()),
-        )
-        .set_label_area_size(LabelAreaPosition::Left, (8).percent())
-        .set_label_area_size(LabelAreaPosition::Bottom, (4).percent())
-        .margin((1).percent())
-        .build_cartesian_2d(0..max_iterations, 0..(max_score + 10))
-        .unwrap();
+//     let mut chart = ChartBuilder::on(&root)
+//         .caption(
+//             "Group assignment hill-climbing convergence",
+//             ("sans-serif", (5).percent_height()),
+//         )
+//         .set_label_area_size(LabelAreaPosition::Left, (8).percent())
+//         .set_label_area_size(LabelAreaPosition::Bottom, (4).percent())
+//         .margin((1).percent())
+//         .build_cartesian_2d(0..max_iterations, 0..(max_score + 10))
+//         .unwrap();
 
-    chart
-        .configure_mesh()
-        .x_desc("Iteration")
-        .y_desc("Score")
-        .draw()
-        .unwrap();
+//     chart
+//         .configure_mesh()
+//         .x_desc("Iteration")
+//         .y_desc("Score")
+//         .draw()
+//         .unwrap();
 
-    for (idx, assignment) in assignments.iter().take(NUM_LINES_TO_PLOT).enumerate() {
-        let color = Palette99::pick(idx).mix(0.9);
-        chart
-            .draw_series(LineSeries::new(
-                assignment
-                    .score_history
-                    .iter()
-                    .enumerate()
-                    .map(|(i, &score)| (i, score)),
-                color.stroke_width(3),
-            ))
-            .unwrap();
-    }
-    // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
-}
+//     for (idx, assignment) in assignments.iter().take(NUM_LINES_TO_PLOT).enumerate() {
+//         let color = Palette99::pick(idx).mix(0.9);
+//         chart
+//             .draw_series(LineSeries::new(
+//                 assignment
+//                     .score_history
+//                     .iter()
+//                     .enumerate()
+//                     .map(|(i, &score)| (i, score)),
+//                 color.stroke_width(3),
+//             ))
+//             .unwrap();
+//     }
+//     // To avoid the IO failure being ignored silently, we manually call the present function
+//     root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+// }
 
 #[cfg(test)]
 mod tests {

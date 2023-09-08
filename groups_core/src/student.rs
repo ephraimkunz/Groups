@@ -1,4 +1,5 @@
 use crate::constants::NUM_HOURS_PER_WEEK;
+use base64::{engine::general_purpose, Engine as _};
 use bitvec::prelude::*;
 use time::OffsetDateTime;
 use time_tz::{timezones, Offset, TimeZone, Tz};
@@ -53,7 +54,7 @@ impl Student {
     /// if `encoded` doesn't represent a valid student.
     pub fn from_encoded(encoded: &str) -> Option<Student> {
         // Decode from base64(<name>|<timezone name>|<u64 as a base 10 string>|<u64 as a base 10 string>|...).
-        let bytes = base64::decode(encoded).ok()?;
+        let bytes = general_purpose::STANDARD.decode(encoded).ok()?;
         let s = std::str::from_utf8(&bytes).ok()?;
         let pieces: Vec<_> = s.split('|').collect();
 
@@ -105,7 +106,7 @@ impl Student {
             let segment = format!("|{}", i);
             s.push_str(&segment);
         }
-        base64::encode(s)
+        general_purpose::STANDARD.encode(s)
     }
 
     fn availability_offset_for_output_timezone(&self, timezone: &Tz) -> i8 {
@@ -228,14 +229,14 @@ mod tests {
 
     #[test]
     fn missing_section_decode() {
-        let encoded = base64::encode("hi|111");
+        let encoded = general_purpose::STANDARD.encode("hi|111");
         let decoded = Student::from_encoded(&encoded);
         assert_eq!(decoded, None)
     }
 
     #[test]
     fn too_short_availability_decode() {
-        let encoded = base64::encode("hi|yo|111");
+        let encoded = general_purpose::STANDARD.encode("hi|yo|111");
         let decoded = Student::from_encoded(&encoded);
         assert_eq!(decoded, None)
     }
@@ -243,7 +244,7 @@ mod tests {
     #[test]
     fn too_long_availability_decode() {
         let availability: String = (0..=NUM_HOURS_PER_WEEK).map(|_| "1").collect();
-        let encoded = base64::encode(format!("hi|yo|{}", availability));
+        let encoded = general_purpose::STANDARD.encode(format!("hi|yo|{}", availability));
         let decoded = Student::from_encoded(&encoded);
         assert_eq!(decoded, None)
     }
@@ -251,7 +252,7 @@ mod tests {
     #[test]
     fn invalid_timezone_decode() {
         let availability: String = (0..NUM_HOURS_PER_WEEK).map(|_| "1").collect();
-        let encoded = base64::encode(format!("hi|yo|{}", availability));
+        let encoded = general_purpose::STANDARD.encode(format!("hi|yo|{}", availability));
         let decoded = Student::from_encoded(&encoded);
         assert_eq!(decoded, None)
     }
@@ -259,7 +260,8 @@ mod tests {
     #[test]
     fn invalid_availability_char_decode() {
         let availability: String = (0..NUM_HOURS_PER_WEEK).map(|_| "x").collect();
-        let encoded = base64::encode(format!("hi|America/Los_Angeles|{}", availability));
+        let encoded =
+            general_purpose::STANDARD.encode(format!("hi|America/Los_Angeles|{}", availability));
         let decoded = Student::from_encoded(&encoded);
         assert_eq!(decoded, None)
     }

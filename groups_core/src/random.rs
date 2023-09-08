@@ -1,7 +1,7 @@
 use crate::constants::{NUM_DAYS_PER_WEEK, NUM_HOURS_PER_WEEK};
 use crate::{student::Student, timezones::timezones};
 use fake::Fake;
-use rand::{prelude::SmallRng, seq::SliceRandom};
+use rand::{prelude::StdRng, seq::SliceRandom};
 use rand::{thread_rng, Rng, RngCore, SeedableRng};
 
 fn add_random_day_availability<R: Rng>(buffer: &mut String, rng: &mut R) {
@@ -34,7 +34,7 @@ pub fn random_students(count: usize, seed: Option<u64>) -> (Vec<Student>, u64) {
         None => thread_rng().next_u64(),
     };
 
-    let mut rng = SmallRng::seed_from_u64(seed);
+    let mut rng = StdRng::seed_from_u64(seed);
 
     (
         (0..count)
