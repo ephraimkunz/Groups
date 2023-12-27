@@ -143,7 +143,7 @@ function generateScheduleCode() {
     }
 
     let avail = availability.join('')
-    let student = new Student(name, timezone, avail)
+    let student = Student.new(name, timezone, avail)
     let encoded = student.encode()
 
     console.log(encoded)

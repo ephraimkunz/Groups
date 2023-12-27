@@ -29,7 +29,6 @@ impl Student {
     /// Create a student with a name, timezone name (one of the values returned by the `timezones()` function),
     /// and availability string in that timezone (string of length `NUM_HOURS_PER_WEEK` containing 1s and 0s,
     /// where 1 indicates the student is available that hour, with the first element representing starting Monday at 12 AM, etc).
-    #[wasm_bindgen(constructor)]
     pub fn new(name: &str, timezone: &str, availability: &str) -> Option<Student> {
         if availability.len() != NUM_HOURS_PER_WEEK {
             return None;
