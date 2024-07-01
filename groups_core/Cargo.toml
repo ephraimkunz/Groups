@@ -9,14 +9,14 @@ description = "Core library for encoding / decoding student availability info an
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-base64 = "0.21"
+base64 = "0.22"
 time-tz = {version = "2 ", features = ["db"]}
 serde = { version = "1", features = ["derive"] }
 wasm-bindgen = "0.2"
 time = {version = "0.3", features = ['wasm-bindgen']}
 console_error_panic_hook = "0.1"
 rand = "0.8"
-itertools = "0.12"
+itertools = "0.13"
 rayon = "1"
 bitvec = "1"
 num = "0.4"
