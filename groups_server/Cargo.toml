@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-shuttle-rocket = "0.46"
-shuttle-runtime = "0.46"
+shuttle-rocket = "0.47"
+shuttle-runtime = "0.47"
 rocket = "0.5"
 tokio = "1"

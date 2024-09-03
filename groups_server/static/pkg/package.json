@@ -1,5 +1,6 @@
 {
   "name": "groups_core",
+  "type": "module",
   "collaborators": [
     "Ephraim Kunz <ephraimkunz@me.com>"
   ],
@@ -10,7 +11,7 @@
     "groups_core.js",
     "groups_core.d.ts"
   ],
-  "module": "groups_core.js",
+  "main": "groups_core.js",
   "types": "groups_core.d.ts",
   "sideEffects": [
     "./snippets/*"
