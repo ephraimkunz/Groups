@@ -2,7 +2,7 @@ use crate::constants::NUM_HOURS_PER_WEEK;
 use crate::student::Student;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use time_tz::{timezones, Offset, TimeZone};
+use time_tz::{Offset, TimeZone, timezones};
 use wasm_bindgen::prelude::*;
 
 use self::hillclimbing_strategy::HillClimbingStrategy;
@@ -129,11 +129,7 @@ fn hours_with_n_or_more_available_students(
         .enumerate()
         .filter_map(
             |(hour, &student_count)| {
-                if student_count >= n {
-                    Some(hour)
-                } else {
-                    None
-                }
+                if student_count >= n { Some(hour) } else { None }
             },
         )
         .collect()

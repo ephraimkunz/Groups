@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::fs::{relative, FileServer, NamedFile};
+use rocket::fs::{FileServer, NamedFile, relative};
 use rocket::{Build, Rocket};
 use std::path::PathBuf;
 

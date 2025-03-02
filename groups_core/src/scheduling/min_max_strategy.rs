@@ -1,10 +1,10 @@
 use itertools::Itertools;
 use num::Integer;
+use rand::rng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 
 use crate::scheduling::{
-    hours_with_n_or_more_available_students, num_students_available_at_hour, Group,
+    Group, hours_with_n_or_more_available_students, num_students_available_at_hour,
 };
 use crate::student::Student;
 
@@ -37,7 +37,7 @@ impl SchedulingStrategy for MinMaxStrategy {
 
         for _ in 0..RANDOM_STARTS {
             let mut teams = (0..students.len()).collect_vec();
-            teams.shuffle(&mut thread_rng());
+            teams.shuffle(&mut rng());
 
             for _ in 0..TEAM_SWAP_MAX_PASSES {
                 let mut swap_happened = false;
@@ -175,7 +175,7 @@ fn team_sched_score(team: &[usize], students: &[Student]) -> f64 {
 #[cfg(test)]
 mod tests {
     use assert_approx_eq::assert_approx_eq;
-    use time_tz::{timezones, TimeZone};
+    use time_tz::{TimeZone, timezones};
 
     use crate::constants::{NUM_HOURS_PER_DAY, NUM_HOURS_PER_WEEK};
     use crate::random::random_students;

@@ -7,10 +7,10 @@ use crate::student::Student;
 use itertools::Itertools;
 use num::Integer;
 use rand::seq::SliceRandom;
-use rand::{thread_rng, Rng};
+use rand::{Rng, rng};
 
 use super::{
-    hours_with_n_or_more_available_students, num_students_available_at_hour, SchedulingStrategy,
+    SchedulingStrategy, hours_with_n_or_more_available_students, num_students_available_at_hour,
 };
 
 #[derive(Default)]
@@ -119,7 +119,7 @@ impl Assignment {
 
     fn find_best_grouping(&mut self, students: &[Student]) {
         // Start with a randomly chosen group assignment.
-        self.students.shuffle(&mut thread_rng());
+        self.students.shuffle(&mut rng());
         (self.score, self.meet_hours) =
             Self::score_assignment_and_get_meet_hours(&self.students, self.group_size, students);
         self.score_history.push(self.score);
@@ -132,8 +132,8 @@ impl Assignment {
         while iter < NUM_TRIES_FOR_BETTER_NEIGHBOR {
             // Generate a neighbor by randomly swapping 2 elements.
             let mut groups = self.students.clone();
-            let a = thread_rng().gen_range(0..groups.len());
-            let b = thread_rng().gen_range(0..groups.len());
+            let a = rng().random_range(0..groups.len());
+            let b = rng().random_range(0..groups.len());
             groups.swap(a, b);
 
             // See if it scores better. If so, keep it. Otherwise, generate another neighbor.

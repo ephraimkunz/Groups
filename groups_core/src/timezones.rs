@@ -1,4 +1,4 @@
-use time_tz::{timezones, TimeZone};
+use time_tz::{TimeZone, timezones};
 use wasm_bindgen::prelude::*;
 
 /// Like `timezones`, but returns a Javascript array of strings for use in WASM.

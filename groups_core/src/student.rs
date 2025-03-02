@@ -1,8 +1,8 @@
 use crate::constants::NUM_HOURS_PER_WEEK;
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use bitvec::prelude::*;
 use time::OffsetDateTime;
-use time_tz::{timezones, Offset, TimeZone, Tz};
+use time_tz::{Offset, TimeZone, Tz, timezones};
 use wasm_bindgen::prelude::*;
 
 type AvailabilityBits = BitArr!(for NUM_HOURS_PER_WEEK, in u32, Lsb0);

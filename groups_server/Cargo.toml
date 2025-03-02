@@ -1,12 +1,13 @@
+
 [package]
 name = "groups_server"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-shuttle-rocket = "0.49"
-shuttle-runtime = "0.49"
+shuttle-rocket = "0.52"
+shuttle-runtime = "0.52"
 rocket = "0.5"
 tokio = "1"

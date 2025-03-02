@@ -1,2 +1,2 @@
-shuttle deploy --name groups-server --no-test
+shuttle deploy --name groups-server
 

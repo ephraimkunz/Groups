@@ -8,4 +8,4 @@
 
 # Run the local webserver version of the shuttle service.
 cd groups_server
-cargo shuttle run
+shuttle run
