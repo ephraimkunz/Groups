@@ -1,0 +1,4 @@
+target/
+*.png
+pkg/
+groups_server/static/pkg
