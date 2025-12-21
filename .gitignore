@@ -1,4 +1,5 @@
 target/
 *.png
 pkg/
+server.log
 groups_server/static/pkg

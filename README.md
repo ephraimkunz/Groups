@@ -15,7 +15,7 @@ Empty           |  Filled Out
 ![](https://user-images.githubusercontent.com/10914093/169445317-185c2eb1-2d6c-472e-92c4-6f87e5070017.png)  |  ![](https://user-images.githubusercontent.com/10914093/169445327-ad1476fa-6719-469c-8653-80de64549bfe.png)
 
 ## Live Site
-The site is live at https://groups-server-j4kg.shuttle.app/student for students and https://groups-server-j4kg.shuttle.app/instructor for instructors.
+The site is live at https://raspberrypi.tailc0d25b.ts.net/student for students and https://raspberrypi.tailc0d25b.ts.net/instructor for instructors, served from my Raspberry Pi 3B via tailscale.
 
 ## Support
 Questions or issues can be resolved by clicking on the issues tab above an opening a new issue, or by sending me an email at kunzep@byui.edu.
@@ -24,6 +24,7 @@ Questions or issues can be resolved by clicking on the issues tab above an openi
 
 ### Run and deploy
 Run `build_and_deploy.sh` in project root.
+This will build the project and deploy it to be served from tailscale.
 
 ### Endpoints
 BASE_URL is printed as a result of deploying or running the local webserver.

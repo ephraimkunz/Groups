@@ -5,6 +5,6 @@ cd groups_core
 # Copy it to the static file server directory.
 echo "Copying wasm pkg to server..."
 cd ../
-rm -r groups_server/static/pkg
+sudo rm -rf groups_server/static/pkg
 cp -r groups_core/pkg groups_server/static/
 echo "Finished copying wasm pkg to server"
